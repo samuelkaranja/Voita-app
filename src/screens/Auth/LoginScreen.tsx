@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,198 +11,224 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
-} from "react-native";
-
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [secure, setSecure] = useState(true);
 
   return (
     <SafeAreaView style={styles.container}>
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1 }}
-    >
-      {/* Tap outside to dismiss keyboard */}
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView
-          contentContainerStyle={styles.inner}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* LOGO */}
-          <View style={styles.logoContainer}>
-            <Image
-              source={require("../../assets/images/VoitaLogo.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-          </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            contentContainerStyle={styles.inner}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* LOGO */}
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('../../assets/images/VoitaLogo.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+              <Text style={styles.tagline}>Smart Automotive Platform</Text>
+            </View>
 
-          {/* FORM */}
-          <View style={styles.card}>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Sign in to continue</Text>
+            {/* HEADER */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Welcome back</Text>
+              <Text style={styles.subtitle}>
+                Sign in and continue to enjoy Voita
+              </Text>
+            </View>
 
-            <TextInput
-              placeholder="Email"
-              placeholderTextColor="#7a7a7a"
-              value={email}
-              onChangeText={setEmail}
-              style={styles.input}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+            {/* PHONE INPUT */}
+            <View style={styles.inputWrapper}>
+              <Text style={styles.label}>Phone Number</Text>
 
-            <TextInput
-              placeholder="Password"
-              placeholderTextColor="#7a7a7a"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              style={styles.input}
-            />
+              <View style={styles.inputContainer}>
+                <Ionicons name="call-outline" size={20} color="#0d2b1f" />
+                <TextInput
+                  placeholder="+254 700 000000"
+                  placeholderTextColor="#0d2b1f"
+                  value={phone}
+                  onChangeText={setPhone}
+                  style={styles.input}
+                  keyboardType="phone-pad"
+                />
+              </View>
+            </View>
 
+            {/* PASSWORD INPUT */}
+            <View style={styles.inputWrapper}>
+              <Text style={styles.label}>Password</Text>
+
+              <View style={styles.inputContainer}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color="#0d2b1f"
+                />
+
+                <TextInput
+                  placeholder="Enter your password"
+                  placeholderTextColor="#0d2b1f"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={secure}
+                  style={styles.input}
+                />
+
+                <TouchableOpacity onPress={() => setSecure(!secure)}>
+                  <Ionicons
+                    name={secure ? 'eye-outline' : 'eye-off-outline'}
+                    size={20}
+                    color="#0d2b1f"
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* FORGOT PASSWORD */}
             <TouchableOpacity>
               <Text style={styles.forgot}>Forgot Password?</Text>
             </TouchableOpacity>
 
+            {/* LOGIN BUTTON */}
             <TouchableOpacity style={styles.button}>
               <Text style={styles.buttonText}>Login</Text>
             </TouchableOpacity>
-
-            {/* DIVIDER */}
-            <View style={styles.divider}>
-              <View style={styles.line} />
-              <Text style={styles.or}>OR</Text>
-              <View style={styles.line} />
-            </View>
 
             {/* SIGN UP */}
             <View style={styles.signupRow}>
               <Text style={styles.signupText}>Don't have an account?</Text>
 
-              <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
-                <Text style={styles.signupLink}> Create Account</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+                <Text style={styles.signupLink}> Sign Up</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </ScrollView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
-  </SafeAreaView>
+            <TouchableOpacity onPress={() => navigation.navigate('App')}>
+                <Text style={styles.signupLink}> HomePage</Text>
+              </TouchableOpacity>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f6f8f7",
+    backgroundColor: '#f4f6f5',
   },
   inner: {
     flexGrow: 1,
-  justifyContent: "flex-start",
-  paddingHorizontal: 20,
-  paddingTop: 40,
-  paddingBottom: 40,
+    paddingHorizontal: 24,
+    paddingTop: 30,
+    paddingBottom: 40,
   },
 
   /* LOGO */
   logoContainer: {
-    alignItems: "center",
+    alignItems: 'center',
+    marginBottom: 30,
   },
   logo: {
-    width: 200,
-    height: 200,
+    width: 100,
+    height: 100,
+  },
+  tagline: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
   },
 
-  /* CARD */
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 22,
-    padding: 22,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 5,
+  /* HEADER */
+  header: {
+    marginBottom: 25,
   },
-
   title: {
-    fontSize: 27,
-    fontWeight: "700",
-    color: "#0d2b1f",
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111827',
   },
   subtitle: {
-    fontSize: 13,
-    color: "#777",
-    marginTop: 4,
-    marginBottom: 18,
+    fontSize: 15,
+    color: '#6b7280',
+    marginTop: 6,
   },
 
   /* INPUTS */
+  inputWrapper: {
+    marginBottom: 18,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    color: '#374151',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#eef1ef',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
   input: {
-    backgroundColor: "#f2f4f3",
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 12,
-    color: "#000",
+    flex: 1,
+    marginLeft: 10,
+    color: '#111',
   },
 
   /* FORGOT */
   forgot: {
-    textAlign: "right",
-    color: "#0d2b1f",
-    fontSize: 12,
-    fontWeight: "600",
-    marginBottom: 16,
+    textAlign: 'right',
+    color: '#0d2b1f',
+    fontWeight: '600',
+    marginBottom: 25,
   },
 
   /* BUTTON */
   button: {
-    backgroundColor: "#0d2b1f",
-    padding: 15,
-    borderRadius: 14,
-    alignItems: "center",
+    backgroundColor: '#0d2b1f',
+    paddingVertical: 18,
+    borderRadius: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
+    marginBottom: 25,
   },
   buttonText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 15,
-  },
-
-  /* DIVIDER */
-  divider: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 18,
-  },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#e0e0e0",
-  },
-  or: {
-    marginHorizontal: 10,
-    fontSize: 12,
-    color: "#888",
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
   },
 
   /* SIGNUP */
   signupRow: {
-    flexDirection: "row",
-    justifyContent: "center",
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   signupText: {
-    fontSize: 13,
-    color: "#666",
+    color: '#6b7280',
   },
   signupLink: {
-    fontSize: 13,
-    color: "#0d2b1f",
-    fontWeight: "700",
+    color: '#0d2b1f',
+    fontWeight: '700',
   },
 });

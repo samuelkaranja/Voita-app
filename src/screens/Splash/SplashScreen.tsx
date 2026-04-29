@@ -14,7 +14,7 @@ export default function SplashScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0d2b1f" />
-
+	
       <Image
         source={require("../../assets/images/VoitaLogo.png")}
         style={styles.logo}
@@ -33,6 +33,6 @@ const styles = StyleSheet.create({
   },
   logo: {
     width: 400,
-    height: 400,
+    height: 200,
   },
 });
