@@ -14,7 +14,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+
+// ✅ Lucide Icons
+import { Phone, Lock, Eye, EyeOff } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
@@ -57,7 +59,8 @@ export default function LoginScreen() {
               <Text style={styles.label}>Phone Number</Text>
 
               <View style={styles.inputContainer}>
-                <Ionicons name="call-outline" size={20} color="#0d2b1f" />
+                <Phone size={20} color="#0d2b1f" strokeWidth={2} />
+
                 <TextInput
                   placeholder="+254 700 000000"
                   placeholderTextColor="#0d2b1f"
@@ -74,11 +77,7 @@ export default function LoginScreen() {
               <Text style={styles.label}>Password</Text>
 
               <View style={styles.inputContainer}>
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={20}
-                  color="#0d2b1f"
-                />
+                <Lock size={20} color="#0d2b1f" strokeWidth={2} />
 
                 <TextInput
                   placeholder="Enter your password"
@@ -90,11 +89,11 @@ export default function LoginScreen() {
                 />
 
                 <TouchableOpacity onPress={() => setSecure(!secure)}>
-                  <Ionicons
-                    name={secure ? 'eye-outline' : 'eye-off-outline'}
-                    size={20}
-                    color="#0d2b1f"
-                  />
+                  {secure ? (
+                    <Eye size={20} color="#0d2b1f" strokeWidth={2} />
+                  ) : (
+                    <EyeOff size={20} color="#0d2b1f" strokeWidth={2} />
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -117,9 +116,11 @@ export default function LoginScreen() {
                 <Text style={styles.signupLink}> Sign Up</Text>
               </TouchableOpacity>
             </View>
+
+            {/* TEMP NAV */}
             <TouchableOpacity onPress={() => navigation.navigate('App')}>
-                <Text style={styles.signupLink}> HomePage</Text>
-              </TouchableOpacity>
+              <Text style={styles.signupLink}> HomePage</Text>
+            </TouchableOpacity>
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>

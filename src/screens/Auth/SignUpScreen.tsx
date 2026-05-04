@@ -15,11 +15,20 @@ import {
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+
+// ✅ Lucide Icons
+import {
+  User,
+  Mail,
+  Phone,
+  Lock,
+  Eye,
+  EyeOff,
+} from 'lucide-react-native';
 
 export default function SignUpScreen() {
   const navigation = useNavigation<any>();
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -69,12 +78,12 @@ export default function SignUpScreen() {
                 <View style={[styles.fieldHalf, styles.fieldLeft]}>
                   <Text style={styles.label}>First Name</Text>
                   <View style={styles.inputWrapper}>
-                    <Ionicons name="person-outline" size={18} color="#0d2b1f" />
+                    <User size={18} color="#0d2b1f" />
                     <TextInput
                       placeholder="John"
                       style={styles.input}
                       value={form.firstName}
-                      onChangeText={v => handleChange('firstName', v)}
+                      onChangeText={(v) => handleChange('firstName', v)}
                     />
                   </View>
                 </View>
@@ -82,12 +91,12 @@ export default function SignUpScreen() {
                 <View style={styles.fieldHalf}>
                   <Text style={styles.label}>Last Name</Text>
                   <View style={styles.inputWrapper}>
-                    <Ionicons name="person-outline" size={18} color="#0d2b1f" />
+                    <User size={18} color="#0d2b1f" />
                     <TextInput
                       placeholder="Doe"
                       style={styles.input}
                       value={form.lastName}
-                      onChangeText={v => handleChange('lastName', v)}
+                      onChangeText={(v) => handleChange('lastName', v)}
                     />
                   </View>
                 </View>
@@ -97,13 +106,13 @@ export default function SignUpScreen() {
               <View style={styles.field}>
                 <Text style={styles.label}>Email</Text>
                 <View style={styles.inputWrapper}>
-                  <Ionicons name="mail-outline" size={18} color="#0d2b1f" />
+                  <Mail size={18} color="#0d2b1f" />
                   <TextInput
                     placeholder="your.email@example.com"
                     style={styles.input}
                     keyboardType="email-address"
                     value={form.email}
-                    onChangeText={v => handleChange('email', v)}
+                    onChangeText={(v) => handleChange('email', v)}
                   />
                 </View>
               </View>
@@ -112,13 +121,13 @@ export default function SignUpScreen() {
               <View style={styles.field}>
                 <Text style={styles.label}>Phone Number</Text>
                 <View style={styles.inputWrapper}>
-                  <Ionicons name="call-outline" size={18} color="#0d2b1f" />
+                  <Phone size={18} color="#0d2b1f" />
                   <TextInput
                     placeholder="0700000000"
                     style={styles.input}
                     keyboardType="phone-pad"
                     value={form.phone}
-                    onChangeText={v => handleChange('phone', v)}
+                    onChangeText={(v) => handleChange('phone', v)}
                   />
                 </View>
               </View>
@@ -127,25 +136,23 @@ export default function SignUpScreen() {
               <View style={styles.field}>
                 <Text style={styles.label}>Password</Text>
                 <View style={styles.inputWrapper}>
-                  <Ionicons
-                    name="lock-closed-outline"
-                    size={18}
-                    color="#0d2b1f"
-                  />
+                  <Lock size={18} color="#0d2b1f" />
                   <TextInput
                     placeholder="Create a strong password"
                     style={styles.input}
                     secureTextEntry={!showPassword}
                     value={form.password}
-                    onChangeText={v => handleChange('password', v)}
+                    onChangeText={(v) => handleChange('password', v)}
                   />
-                  <TouchableOpacity onPress={() => setShowPassword(prev => !prev)}>
-		   <Ionicons
-		    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-		    size={18}
-		    color="#0d2b1f"
-		   />
-		  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setShowPassword((prev) => !prev)}
+                  >
+                    {showPassword ? (
+                      <EyeOff size={18} color="#0d2b1f" />
+                    ) : (
+                      <Eye size={18} color="#0d2b1f" />
+                    )}
+                  </TouchableOpacity>
                 </View>
               </View>
 
@@ -153,25 +160,27 @@ export default function SignUpScreen() {
               <View style={styles.field}>
                 <Text style={styles.label}>Confirm Password</Text>
                 <View style={styles.inputWrapper}>
-                  <Ionicons
-                    name="lock-closed-outline"
-                    size={18}
-                    color="#0d2b1f"
-                  />
+                  <Lock size={18} color="#0d2b1f" />
                   <TextInput
                     placeholder="Confirm your password"
                     style={styles.input}
                     secureTextEntry={!showConfirmPassword}
                     value={form.confirmPassword}
-                    onChangeText={v => handleChange('confirmPassword', v)}
+                    onChangeText={(v) =>
+                      handleChange('confirmPassword', v)
+                    }
                   />
-                  <TouchableOpacity onPress={() => setShowConfirmPassword(prev => !prev)}>
-		   <Ionicons
-		    name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
-		    size={18}
-		    color="#0d2b1f"
-		   />
-		 </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() =>
+                      setShowConfirmPassword((prev) => !prev)
+                    }
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={18} color="#0d2b1f" />
+                    ) : (
+                      <Eye size={18} color="#0d2b1f" />
+                    )}
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -183,8 +192,12 @@ export default function SignUpScreen() {
 
             {/* LOGIN */}
             <View style={styles.loginRow}>
-              <Text style={styles.loginText}>Already have an account?</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.loginText}>
+                Already have an account?
+              </Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Login')}
+              >
                 <Text style={styles.loginLink}> Login</Text>
               </TouchableOpacity>
             </View>
@@ -212,6 +225,7 @@ const styles = StyleSheet.create({
   logo: {
     width: 100,
     height: 70,
+    resizeMode: 'contain',
   },
 
   tagline: {
