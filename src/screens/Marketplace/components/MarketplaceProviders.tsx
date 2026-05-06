@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
 import ProviderCard from './ProviderCard';
 
-export default function MarketplaceProviders ({ providers }) {
+export default function MarketplaceProviders({ providers }) {
   return (
     <View style={styles.sectionContainer}>
       <View style={styles.header}>
@@ -12,16 +12,16 @@ export default function MarketplaceProviders ({ providers }) {
         </View>
       </View>
 
-      {providers.map((item) => (
-        <ProviderCard 
-          key={item.id} 
-          provider={item} 
-          onBookNow={() => console.log(`Booking ${item.name}`)} 
+      {providers.map(item => (
+        <ProviderCard
+          key={item.id}
+          provider={item}
+          onBookNow={() => console.log(`Booking ${item.name}`)}
         />
       ))}
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   sectionContainer: {

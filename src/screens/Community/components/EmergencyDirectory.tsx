@@ -1,6 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { ShieldAlert, ChevronRight, Car, Construction, HeartPulse } from 'lucide-react-native';
+import {
+  ShieldAlert,
+  ChevronRight,
+  Car,
+  Construction,
+  HeartPulse,
+} from 'lucide-react-native';
 
 const ContactRow = ({ Icon, title, sub, iconColor, bgColor }) => (
   <TouchableOpacity style={styles.row}>
@@ -22,36 +28,36 @@ export default function EmergencyDirectory() {
         <View style={styles.accentBar} />
         <View style={styles.header}>
           <ShieldAlert color="#ef4444" size={24} />
-          <Text style={styles.headerText}>Help Contacts{"\n"}Directory</Text>
+          <Text style={styles.headerText}>Help Contacts Directory</Text>
         </View>
 
-        <ContactRow 
-          Icon={ShieldAlert} 
-          iconColor="#ef4444" 
+        <ContactRow
+          Icon={ShieldAlert}
+          iconColor="#ef4444"
           bgColor="#fee2e2"
-          title="National Police" 
-          sub="999 / 112" 
+          title="National Police"
+          sub="999 / 112"
         />
-        <ContactRow 
-          Icon={Car} 
-          iconColor="#10b981" 
+        <ContactRow
+          Icon={Car}
+          iconColor="#10b981"
           bgColor="#d1fae5"
-          title="NTSA Hotline" 
-          sub="0709 932 000" 
+          title="NTSA Hotline"
+          sub="0709 932 000"
         />
-        <ContactRow 
-          Icon={Construction} 
-          iconColor="#3b82f6" 
+        <ContactRow
+          Icon={Construction}
+          iconColor="#3b82f6"
           bgColor="#dbeafe"
-          title="KeNHA Support" 
-          sub="1511" 
+          title="KeNHA Support"
+          sub="1511"
         />
-        <ContactRow 
-          Icon={HeartPulse} 
-          iconColor="#f59e0b" 
+        <ContactRow
+          Icon={HeartPulse}
+          iconColor="#f59e0b"
           bgColor="#fef3c7"
-          title="Red Cross" 
-          sub="0700 000 999" 
+          title="Red Cross"
+          sub="0700 000 999"
         />
       </View>
     </View>
@@ -92,7 +98,7 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
   },
   headerText: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#0f172a',
     marginLeft: 12,
@@ -117,12 +123,12 @@ const styles = StyleSheet.create({
     marginLeft: 15,
   },
   rowTitle: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '700',
     color: '#1e293b',
   },
   rowSub: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#64748b',
     marginTop: 2,
   },

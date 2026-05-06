@@ -3,15 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 // Updated icon import
 import { MoreHorizontal, ThumbsUp, MessageSquare } from 'lucide-react-native';
 
-const NewsCard = ({ 
-  author, 
-  time, 
-  tag, 
+const NewsCard = ({
+  author,
+  time,
+  tag,
   badge,
-  title, 
+  title,
   content,
   likes = 24,
-  comments = 8
+  comments = 8,
 }) => {
   return (
     <View style={styles.cardContainer}>
@@ -19,20 +19,25 @@ const NewsCard = ({
       <View style={styles.header}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
-            {author ? author.split(' ').map(n => n[0]).join('') : '??'}
+            {author
+              ? author
+                  .split(' ')
+                  .map(n => n[0])
+                  .join('')
+              : '??'}
           </Text>
         </View>
-        
+
         <View style={styles.authorInfo}>
           <View style={styles.nameRow}>
             <Text style={styles.authorName}>{author}</Text>
             <Text style={styles.timeText}>{time}</Text>
             <TouchableOpacity style={styles.moreOptions} hitSlop={10}>
-               {/* Lucide MoreHorizontal */}
-               <MoreHorizontal size={18} color="#6B7280" />
+              {/* Lucide MoreHorizontal */}
+              <MoreHorizontal size={18} color="#6B7280" />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.tagRow}>
             <View style={styles.ownerBadge}>
               <Text style={styles.ownerBadgeText}>{badge}</Text>
@@ -58,7 +63,7 @@ const NewsCard = ({
             <ThumbsUp size={16} color="#4B5563" strokeWidth={2.5} />
             <Text style={styles.statText}>{likes}</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.statItem}>
             {/* Lucide MessageSquare */}
             <MessageSquare size={16} color="#4B5563" strokeWidth={2.5} />

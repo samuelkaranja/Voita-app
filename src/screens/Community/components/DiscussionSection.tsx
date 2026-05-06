@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 
-export default function DiscussionSection () {
+export default function DiscussionSection() {
   const circles = [
     { name: 'German Engineering', count: '12k', color: '#D1FAE5' },
     { name: 'Japanese Reliability', count: '45k', color: '#F3F4F6' },
@@ -13,7 +13,8 @@ export default function DiscussionSection () {
     <View style={styles.container}>
       <Text style={styles.headerTitle}>Active Discussions</Text>
       <Text style={styles.description}>
-        Join specific manufacturer circles or general maintenance threads. Share experiences and get verified advice.
+        Join specific manufacturer circles or general maintenance threads. Share
+        experiences and get verified advice.
       </Text>
 
       {/* Filter Buttons */}
@@ -29,7 +30,7 @@ export default function DiscussionSection () {
       {/* Main Card Content */}
       <View style={styles.card}>
         <Text style={styles.sectionLabel}>MANUFACTURER CIRCLES</Text>
-        
+
         {circles.map((item, index) => (
           <View key={index} style={styles.listItem}>
             <Text style={styles.circleName}>{item.name}</Text>
@@ -42,11 +43,11 @@ export default function DiscussionSection () {
         <View style={styles.divider} />
 
         <Text style={styles.sectionLabel}>EXPERT ADVICE</Text>
-        
+
         <TouchableOpacity style={styles.expertCard}>
-          <Image 
+          <Image
             source={{ uri: 'https://via.placeholder.com/50' }} // Replace with expert image
-            style={styles.avatar} 
+            style={styles.avatar}
           />
           <View>
             <Text style={styles.expertName}>Ask Eng. Kamau</Text>
@@ -56,7 +57,7 @@ export default function DiscussionSection () {
       </View>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {

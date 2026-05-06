@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  Image,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -14,9 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-
-// ✅ Lucide Icons
-import { Phone, Lock, Eye, EyeOff } from 'lucide-react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
@@ -36,91 +33,76 @@ export default function LoginScreen() {
             contentContainerStyle={styles.inner}
             keyboardShouldPersistTaps="handled"
           >
-            {/* LOGO */}
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('../../assets/images/VoitaLogo.png')}
-                style={styles.logo}
-                resizeMode="contain"
-              />
-              <Text style={styles.tagline}>Smart Automotive Platform</Text>
-            </View>
-
-            {/* HEADER */}
-            <View style={styles.header}>
-              <Text style={styles.title}>Welcome back</Text>
-              <Text style={styles.subtitle}>
-                Sign in and continue to enjoy Voita
-              </Text>
-            </View>
-
-            {/* PHONE INPUT */}
-            <View style={styles.inputWrapper}>
-              <Text style={styles.label}>Phone Number</Text>
-
-              <View style={styles.inputContainer}>
-                <Phone size={20} color="#0d2b1f" strokeWidth={2} />
-
-                <TextInput
-                  placeholder="+254 700 000000"
-                  placeholderTextColor="#0d2b1f"
-                  value={phone}
-                  onChangeText={setPhone}
-                  style={styles.input}
-                  keyboardType="phone-pad"
-                />
+            {/* FORM WRAPPER (CENTERED BLOCK) */}
+            <View style={styles.form}>
+              {/* HEADER */}
+              <View style={styles.header}>
+                <Text style={styles.title}>Welcome back</Text>
+                <Text style={styles.subtitle}>
+                  Sign in and continue to enjoy Voita
+                </Text>
               </View>
-            </View>
 
-            {/* PASSWORD INPUT */}
-            <View style={styles.inputWrapper}>
-              <Text style={styles.label}>Password</Text>
+              {/* PHONE INPUT */}
+              <View style={styles.inputWrapper}>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    placeholder="Phone Number"
+                    placeholderTextColor="#0d2b1f"
+                    value={phone}
+                    onChangeText={setPhone}
+                    style={styles.input}
+                    keyboardType="phone-pad"
+                  />
+                </View>
+              </View>
 
-              <View style={styles.inputContainer}>
-                <Lock size={20} color="#0d2b1f" strokeWidth={2} />
+              {/* PASSWORD INPUT */}
+              <View style={styles.inputWrapper}>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    placeholder="Password"
+                    placeholderTextColor="#0d2b1f"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={secure}
+                    style={styles.input}
+                  />
 
-                <TextInput
-                  placeholder="Enter your password"
-                  placeholderTextColor="#0d2b1f"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={secure}
-                  style={styles.input}
-                />
+                  <TouchableOpacity onPress={() => setSecure(!secure)}>
+                    {secure ? (
+                      <Eye size={20} color="#0d2b1f" strokeWidth={2} />
+                    ) : (
+                      <EyeOff size={20} color="#0d2b1f" strokeWidth={2} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-                <TouchableOpacity onPress={() => setSecure(!secure)}>
-                  {secure ? (
-                    <Eye size={20} color="#0d2b1f" strokeWidth={2} />
-                  ) : (
-                    <EyeOff size={20} color="#0d2b1f" strokeWidth={2} />
-                  )}
+              {/* FORGOT PASSWORD */}
+              <TouchableOpacity>
+                <Text style={styles.forgot}>Forgot Password?</Text>
+              </TouchableOpacity>
+
+              {/* LOGIN BUTTON */}
+              <TouchableOpacity style={styles.button}>
+                <Text style={styles.buttonText}>Login</Text>
+              </TouchableOpacity>
+
+              {/* SIGN UP */}
+              <View style={styles.signupRow}>
+                <Text style={styles.signupText}>Don't have an account?</Text>
+
+                <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+                  <Text style={styles.signupLink}> Sign Up</Text>
                 </TouchableOpacity>
               </View>
-            </View>
 
-            {/* FORGOT PASSWORD */}
-            <TouchableOpacity>
-              <Text style={styles.forgot}>Forgot Password?</Text>
-            </TouchableOpacity>
-
-            {/* LOGIN BUTTON */}
-            <TouchableOpacity style={styles.button}>
-              <Text style={styles.buttonText}>Login</Text>
-            </TouchableOpacity>
-
-            {/* SIGN UP */}
-            <View style={styles.signupRow}>
-              <Text style={styles.signupText}>Don't have an account?</Text>
-
-              <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-                <Text style={styles.signupLink}> Sign Up</Text>
+              {/* TEMP NAV */}
+              <TouchableOpacity onPress={() => navigation.navigate('App')}>
+                <Text style={styles.signupLink}>HomePage</Text>
               </TouchableOpacity>
             </View>
-
-            {/* TEMP NAV */}
-            <TouchableOpacity onPress={() => navigation.navigate('App')}>
-              <Text style={styles.signupLink}> HomePage</Text>
-            </TouchableOpacity>
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
@@ -133,52 +115,42 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f4f6f5',
   },
+
+  /* CENTERING WRAPPER */
   inner: {
     flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 30,
-    paddingBottom: 40,
+    paddingVertical: 40,
   },
 
-  /* LOGO */
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-  },
-  tagline: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontWeight: '500',
+  /* FORM CONTAINER */
+  form: {
+    width: '100%',
+    maxWidth: 420,
   },
 
   /* HEADER */
   header: {
-    marginBottom: 25,
+    marginBottom: 40,
   },
   title: {
-    fontSize: 28,
+    fontSize: 35,
     fontWeight: '800',
     color: '#111827',
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 15,
     color: '#6b7280',
+    textAlign: 'center',
     marginTop: 6,
   },
 
   /* INPUTS */
   inputWrapper: {
     marginBottom: 18,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-    color: '#374151',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -187,6 +159,15 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
+
+    /* iOS shadow */
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+
+    /* Android shadow */
+    elevation: 2,
   },
   input: {
     flex: 1,

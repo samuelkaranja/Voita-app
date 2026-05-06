@@ -1,35 +1,38 @@
 import React from 'react';
-import { View, Text, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ImageBackground,
+  TouchableOpacity,
+} from 'react-native';
 import { Map } from 'lucide-react-native';
 
 export default function ServiceScoutCard() {
   return (
     <View style={styles.container}>
       <ImageBackground
-        source={require('../../../assets/images/community/mechanic.png')} 
+        source={require('../../../assets/images/community/mechanic.png')}
         style={styles.backgroundImage}
         imageStyle={{ borderRadius: 24 }}
       >
         {/* Dark overlay to match the Emergency.png aesthetic */}
         <View style={styles.overlay}>
-          
           <View style={styles.tag}>
             <Text style={styles.tagText}>SERVICE SCOUT</Text>
           </View>
 
-          <Text style={styles.title}>
-            On-Demand{"\n"}Technicians
-          </Text>
+          <Text style={styles.title}>On-Demand{'\n'}Technicians</Text>
 
           <Text style={styles.description}>
-            Facing mechanical issues? Request a verified VeraGuard Scout to your current location for diagnostics or rescue.
+            Facing mechanical issues? Request a verified VeraGuard Scout to your
+            current location for diagnostics or rescue.
           </Text>
 
           <TouchableOpacity style={styles.button}>
             <Text style={styles.buttonText}>Call for Scout</Text>
             <Map color="#FFFFFF" size={20} style={styles.icon} />
           </TouchableOpacity>
-          
         </View>
       </ImageBackground>
     </View>

@@ -8,12 +8,13 @@ export default function CommunityHero() {
       <View style={styles.content}>
         <Text style={styles.tagline}>THE HUB</Text>
         <Text style={styles.headline}>
-          Community Wisdom{"\n"}
+          Community Wisdom{'\n'}
           <Text style={styles.highlight}>Protects Every Mile.</Text>
         </Text>
-        
+
         <Text style={styles.description}>
-          Connect with specialists, request technical scouts, or engage in brand-specific discussions within the VeraGuard ecosystem.
+          Connect with specialists, request technical scouts, or engage in
+          brand-specific discussions within the VeraGuard ecosystem.
         </Text>
 
         <TouchableOpacity style={styles.primaryBtn}>

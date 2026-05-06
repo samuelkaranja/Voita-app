@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  Keyboard 
+import {
+  StyleSheet,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Keyboard,
 } from 'react-native';
 
-export default function JoinNetworkCard () {
+export default function JoinNetworkCard() {
   const [email, setEmail] = useState('');
 
   const handleJoin = () => {
@@ -20,9 +20,10 @@ export default function JoinNetworkCard () {
   return (
     <View style={styles.container}>
       <Text style={styles.headerText}>Join the Archivist Network</Text>
-      
+
       <Text style={styles.subHeaderText}>
-        Get exclusive maintenance tips from master mechanics and priority booking for Ezra Insure members.
+        Get exclusive maintenance tips from master mechanics and priority
+        booking for Ezra Insure members.
       </Text>
 
       <View style={styles.inputRow}>
@@ -35,9 +36,9 @@ export default function JoinNetworkCard () {
           keyboardType="email-address"
           autoCapitalize="none"
         />
-        
-        <TouchableOpacity 
-          style={styles.joinButton} 
+
+        <TouchableOpacity
+          style={styles.joinButton}
           onPress={handleJoin}
           activeOpacity={0.8}
         >
@@ -46,7 +47,7 @@ export default function JoinNetworkCard () {
       </View>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {

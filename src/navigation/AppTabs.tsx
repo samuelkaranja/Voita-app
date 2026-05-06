@@ -11,7 +11,12 @@ import {
   User,
 } from 'lucide-react-native';
 
-import AppHeader from "../components/AppHeader";
+import MarketplaceHeader from '../components/MarketplaceHeader';
+import CommunityHeader from '../components/CommunityHeader';
+import InsuranceHeader from '../components/InsuranceHeader';
+import ClaimsHeader from '../components/ClaimsHeader';
+import ProfileHeader from '../components/ProfileHeader';
+
 import HomeScreen from '../screens/Home/HomeScreen';
 import MarketplaceScreen from '../screens/Marketplace/MarketplaceScreen';
 import CommunityScreen from '../screens/Community/CommunityScreen';
@@ -25,8 +30,6 @@ export default function AppTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        header: () => <AppHeader />,
-
         tabBarActiveTintColor: '#0d2b1f',
         tabBarInactiveTintColor: '#999999',
 
@@ -50,12 +53,36 @@ export default function AppTabs() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Marketplace" component={MarketplaceScreen} />
-      <Tab.Screen name="Community" component={CommunityScreen} />
-      <Tab.Screen name="Insurance" component={InsuranceScreen} />
-      <Tab.Screen name="Claims" component={ClaimsScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ headerShown: false }}
+      />
+      <Tab.Screen
+        name="Marketplace"
+        component={MarketplaceScreen}
+        options={{ header: () => <MarketplaceHeader /> }}
+      />
+      <Tab.Screen
+        name="Community"
+        component={CommunityScreen}
+        options={{ header: () => <CommunityHeader /> }}
+      />
+      <Tab.Screen
+        name="Insurance"
+        component={InsuranceScreen}
+        options={{ header: () => <InsuranceHeader /> }}
+      />
+      <Tab.Screen
+        name="Claims"
+        component={ClaimsScreen}
+        options={{ header: () => <ClaimsHeader /> }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ header: () => <ProfileHeader /> }}
+      />
     </Tab.Navigator>
   );
 }

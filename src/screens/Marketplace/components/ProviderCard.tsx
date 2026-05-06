@@ -1,16 +1,16 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 
-const ProviderCard = ({ 
-  provider, 
-  onBookNow, 
-  badgeText = "PARTNER", // Default value
-  ctaText = "BOOK NOW"   // Default value
+const ProviderCard = ({
+  provider,
+  onBookNow,
+  badgeText = 'PARTNER', // Default value
+  ctaText = 'BOOK NOW', // Default value
 }) => {
-
-  const imageSource = typeof provider.imageUrl === 'string' 
-    ? { uri: provider.imageUrl } 
-    : provider.imageUrl;
+  const imageSource =
+    typeof provider.imageUrl === 'string'
+      ? { uri: provider.imageUrl }
+      : provider.imageUrl;
 
   return (
     <View style={styles.cardContainer}>
@@ -18,7 +18,9 @@ const ProviderCard = ({
       <View style={styles.imageContainer}>
         <Image source={imageSource} style={styles.image} />
         <View style={styles.ratingBadge}>
-          <Text style={styles.ratingText}>⭐ {provider.rating} ({provider.reviewCount})</Text>
+          <Text style={styles.ratingText}>
+            ⭐ {provider.rating} ({provider.reviewCount})
+          </Text>
         </View>
       </View>
 
@@ -45,7 +47,7 @@ const ProviderCard = ({
 
         <View style={styles.footer}>
           <Text style={styles.priceLevel}>{provider.priceLevel}</Text>
-          
+
           {/* Dynamic Call to Action */}
           <TouchableOpacity onPress={onBookNow} style={styles.bookNowContainer}>
             <Text style={styles.bookNowText}>{ctaText.toUpperCase()}</Text>

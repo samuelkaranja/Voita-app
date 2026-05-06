@@ -1,32 +1,46 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import React from 'react';
+import { StatusBar, ScrollView, StyleSheet, View } from 'react-native';
+
+import HeroSection from './components/HeroSection';
+import PlansSection from './components/PlansSection';
+import SynergySection from './components/SynergySection';
+import QuickActions from './components/QuickActions';
+import HardwareIntegration from './components/HardwareIntegration';
+import CoverageMap from './components/CoverageMap';
+import PolicyExtensions from './components/PolicyExtensions';
 
 export default function InsuranceScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Insurance</Text>
-      <Text style={styles.subtitle}>
-        Manage policies, coverage & protection plans
-      </Text>
-    </View>
+    <>
+      <StatusBar backgroundColor="#001810" barStyle="light-content" />
+
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <HeroSection />
+
+        <PlansSection />
+
+        <View style={styles.section}>
+          <SynergySection />
+          <QuickActions />
+          <HardwareIntegration />
+          <CoverageMap />
+        </View>
+
+        <PolicyExtensions />
+      </ScrollView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: "#fff",
-    justifyContent: "center",
+    backgroundColor: '#f7faf8',
+    paddingHorizontal: 25,
+    paddingVertical: 30,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "#0d2b1f",
-  },
-  subtitle: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "#555",
+  section: {
+    marginTop: 20,
+    gap: 16,
   },
 });

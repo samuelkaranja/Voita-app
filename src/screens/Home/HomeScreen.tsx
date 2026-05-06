@@ -1,33 +1,36 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 
-import TagSelector from "./components/TagSelector";
-import SpeedWidget from "./components/SpeedWidget";
-import MapViewComponent from "./components/MapViewComponent";
-import { useLocation } from "../../hooks/useLocation";
+import TagSelector from './components/TagSelector';
+import SpeedWidget from './components/SpeedWidget';
+import MapViewComponent from './components/MapViewComponent';
+import { useLocation } from '../../hooks/useLocation';
 
 export default function HomeScreen() {
   const [selectedTag, setSelectedTag] = useState(null);
   const { location } = useLocation();
 
-  // Sanitize location data: Ensure we are passing clean numbers to the Map
-  const formattedLocation = location?.coords
-    ? {
-        latitude: parseFloat(location.coords.latitude),
-        longitude: parseFloat(location.coords.longitude),
-      }
-    : null;
+  const [initialLocation, setInitialLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (location?.coords && !initialLocation) {
+      setInitialLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+    }
+  }, [location, initialLocation]);
 
   const speed = location?.coords?.speed ?? 0;
 
   return (
     <View style={styles.mainContainer}>
-      {/* BACKGROUND LAYER: The Map */}
-      {formattedLocation ? (
-        <MapViewComponent 
-          key="active-google-map" 
-          location={formattedLocation} 
-        />
+      {/* BACKGROUND LAYER: Map */}
+      {initialLocation ? (
+        <MapViewComponent location={initialLocation} />
       ) : (
         <View style={styles.centerFull}>
           <ActivityIndicator size="large" color="#0000ff" />
@@ -35,14 +38,11 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* FOREGROUND LAYER: UI Widgets */}
+      {/* FOREGROUND LAYER: UI */}
       <View style={styles.uiOverlay} pointerEvents="box-none">
-        {formattedLocation && (
+        {initialLocation && (
           <>
-            <TagSelector 
-              selected={selectedTag} 
-              setSelected={setSelectedTag} 
-            />
+            <TagSelector selected={selectedTag} setSelected={setSelectedTag} />
             <SpeedWidget speed={speed} />
           </>
         )}
@@ -54,18 +54,17 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: "#f4f4f4",
+    backgroundColor: '#f4f4f4',
   },
   centerFull: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   uiOverlay: {
-    // Fills the screen but 'box-none' allows touches to pass through to the map
     ...StyleSheet.absoluteFillObject,
-    justifyContent: "flex-end", // Push widgets to the bottom
+    justifyContent: 'flex-end',
     paddingBottom: 40,
-    alignItems: "center",
+    alignItems: 'center',
   },
 });

@@ -1,32 +1,48 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import React from 'react';
+import { StyleSheet, ScrollView, StatusBar } from 'react-native';
+
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import HeroSection from './components/HeroSection';
+import HonestyPledge from './components/HonestyPledge';
+import ClaimNarrative from './components/ClaimNarrative';
+import MediaCapture from './components/MediaCapture';
+import SubmitFooter from './components/SubmitFooter';
 
 export default function ClaimsScreen() {
+  const handleClaimSubmit = () => {
+    console.log('Claim submitted successfully');
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Claims</Text>
-      <Text style={styles.subtitle}>
-        Track and manage your insurance claims
-      </Text>
-    </View>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <StatusBar backgroundColor="#001810" barStyle="light-content" />
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <HeroSection userName="Samuel" />
+        <HonestyPledge />
+
+        <ClaimNarrative />
+        <MediaCapture />
+
+        <SubmitFooter onSubmit={handleClaimSubmit} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: "#fff",
-    justifyContent: "center",
+    backgroundColor: '#f7faf8',
+    paddingTop: 20,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "#0d2b1f",
-  },
-  subtitle: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "#555",
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
   },
 });
