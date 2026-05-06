@@ -4,11 +4,19 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import TagSelector from './components/TagSelector';
 import SpeedWidget from './components/SpeedWidget';
 import MapViewComponent from './components/MapViewComponent';
+
+import FloodAlertCard from './components/FloodAlertCard';
+import CongestionAlertCard from './components/CongestionAlertCard';
+
 import { useLocation } from '../../hooks/useLocation';
 
 export default function HomeScreen() {
   const [selectedTag, setSelectedTag] = useState(null);
   const { location } = useLocation();
+
+  //Alert visibility state
+  const [showFloodAlert, setShowFloodAlert] = useState(true);
+  const [showCongestionAlert, setShowCongestionAlert] = useState(true);
 
   const [initialLocation, setInitialLocation] = useState<{
     latitude: number;
@@ -28,7 +36,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.mainContainer}>
-      {/* 🗺️ MAP BACKGROUND */}
+      {/* MAP BACKGROUND */}
       <View style={{ flex: 1 }}>
         {initialLocation ? (
           <MapViewComponent location={initialLocation} />
@@ -40,16 +48,34 @@ export default function HomeScreen() {
         )}
       </View>
 
-      {/* 🎯 OVERLAY STACK */}
+      {/* OVERLAY STACK */}
       {initialLocation && (
         <View style={styles.centerOverlay} pointerEvents="box-none">
-          {/* Tag Selector */}
+          {/* TAG SELECTOR */}
           <TagSelector selected={selectedTag} setSelected={setSelectedTag} />
 
-          {/* Speed Widget (below TagSelector) */}
-          <View style={{ marginTop: 12, width: '100%' }}>
+          {/* SPEED WIDGET */}
+          <View style={styles.cardSpacing}>
             <SpeedWidget speed={speed} />
           </View>
+
+          {/* FLOOD ALERT */}
+          {showFloodAlert && (
+            <FloodAlertCard
+              title="Flood Alert: Westlands"
+              subtitle="Heavy rains near Sarit. Water logging reported."
+              onClose={() => setShowFloodAlert(false)}
+            />
+          )}
+
+          {/* CONGESTION ALERT */}
+          {showCongestionAlert && (
+            <CongestionAlertCard
+              title="Congestion: 12 min delay"
+              subtitle="Standard traffic flow on Uhuru Highway"
+              onClose={() => setShowCongestionAlert(false)}
+            />
+          )}
         </View>
       )}
     </View>
@@ -70,9 +96,14 @@ const styles = StyleSheet.create({
 
   centerOverlay: {
     position: 'absolute',
-    top: 60,
+    top: 20,
     width: '100%',
     alignItems: 'center',
     paddingHorizontal: 16,
+  },
+
+  cardSpacing: {
+    marginTop: 12,
+    width: '100%',
   },
 });
