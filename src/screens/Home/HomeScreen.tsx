@@ -28,25 +28,30 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.mainContainer}>
-      {/* BACKGROUND LAYER: Map */}
-      {initialLocation ? (
-        <MapViewComponent location={initialLocation} />
-      ) : (
-        <View style={styles.centerFull}>
-          <ActivityIndicator size="large" color="#0000ff" />
-          <Text style={{ marginTop: 10 }}>Getting GPS Lock...</Text>
-        </View>
-      )}
-
-      {/* FOREGROUND LAYER: UI */}
-      <View style={styles.uiOverlay} pointerEvents="box-none">
-        {initialLocation && (
-          <>
-            <TagSelector selected={selectedTag} setSelected={setSelectedTag} />
-            <SpeedWidget speed={speed} />
-          </>
+      {/* 🗺️ MAP BACKGROUND */}
+      <View style={{ flex: 1 }}>
+        {initialLocation ? (
+          <MapViewComponent location={initialLocation} />
+        ) : (
+          <View style={styles.centerFull}>
+            <ActivityIndicator size="large" color="#0000ff" />
+            <Text style={{ marginTop: 10 }}>Getting GPS Lock...</Text>
+          </View>
         )}
       </View>
+
+      {/* 🎯 OVERLAY STACK */}
+      {initialLocation && (
+        <View style={styles.centerOverlay} pointerEvents="box-none">
+          {/* Tag Selector */}
+          <TagSelector selected={selectedTag} setSelected={setSelectedTag} />
+
+          {/* Speed Widget (below TagSelector) */}
+          <View style={{ marginTop: 12, width: '100%' }}>
+            <SpeedWidget speed={speed} />
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -56,15 +61,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f4f4f4',
   },
+
   centerFull: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  uiOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'flex-end',
-    paddingBottom: 40,
+
+  centerOverlay: {
+    position: 'absolute',
+    top: 60,
+    width: '100%',
     alignItems: 'center',
+    paddingHorizontal: 16,
   },
 });

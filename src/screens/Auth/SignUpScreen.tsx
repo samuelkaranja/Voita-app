@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f6f7f6',
-    paddingTop: 10,
+    paddingTop: 5,
   },
 
   inner: {
@@ -182,10 +182,19 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#eaeceb',
     borderRadius: 16,
-    paddingVertical: 20,
+    paddingVertical: 22,
     paddingHorizontal: 20,
     fontSize: 15,
     color: '#333333',
+    
+    /* iOS shadow */
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+
+    /* Android shadow */
+    elevation: 2,
   },
 
   passwordWrapper: {
@@ -194,6 +203,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#eaeceb',
     borderRadius: 16,
     paddingHorizontal: 18,
+    paddingVertical: 5,
+    
+    /* iOS shadow */
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+
+    /* Android shadow */
+    elevation: 2,
   },
 
   passwordInput: {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Flame, Venus, AlertTriangle } from 'lucide-react-native';
 
 export default function TagSelector({ selected, setSelected }) {
@@ -10,15 +10,7 @@ export default function TagSelector({ selected, setSelected }) {
   ];
 
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        position: 'absolute',
-        top: 50,
-        alignSelf: 'center',
-        zIndex: 10,
-      }}
-    >
+    <View style={styles.container}>
       {tags.map(tag => {
         const isActive = selected === tag.label;
         const Icon = tag.icon;
@@ -27,23 +19,15 @@ export default function TagSelector({ selected, setSelected }) {
           <TouchableOpacity
             key={tag.label}
             onPress={() => setSelected(tag.label)}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingVertical: 8,
-              paddingHorizontal: 12,
-              backgroundColor: isActive ? '#0d2b1f' : '#e5e5e5',
-              marginHorizontal: 6,
-              borderRadius: 20,
-            }}
+            style={[styles.tag, isActive && styles.activeTag]}
           >
             <Icon
               size={16}
-              color={isActive ? '#fff' : '#333'}
+              color={isActive ? '#fff' : '#0d2b1f'}
               style={{ marginRight: 6 }}
             />
 
-            <Text style={{ color: isActive ? '#fff' : '#333' }}>
+            <Text style={[styles.text, isActive && styles.activeText]}>
               {tag.label}
             </Text>
           </TouchableOpacity>
@@ -52,3 +36,43 @@ export default function TagSelector({ selected, setSelected }) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 20,
+
+    // shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+
+  tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginHorizontal: 4,
+    borderRadius: 16,
+    backgroundColor: '#e5e5e5',
+  },
+
+  activeTag: {
+    backgroundColor: '#0d2b1f',
+  },
+
+  text: {
+    fontSize: 13,
+    color: '#0d2b1f',
+  },
+
+  activeText: {
+    color: '#fff',
+  },
+});

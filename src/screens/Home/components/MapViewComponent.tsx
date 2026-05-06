@@ -1,39 +1,38 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import { View, StyleSheet } from 'react-native';
 
 export default function MapViewComponent({ location }: any) {
-  if (!location?.latitude || !location?.longitude) {
+  const mapRef = useRef<MapView | null>(null);
+
+  if (location?.latitude == null || location?.longitude == null) {
     return null;
   }
 
-  const initialRegion = {
+  const region = {
     latitude: location.latitude,
     longitude: location.longitude,
     latitudeDelta: 0.005,
     longitudeDelta: 0.005,
   };
 
+  // Smooth camera animation
+  useEffect(() => {
+    if (mapRef.current) {
+      mapRef.current.animateToRegion(region, 1000);
+    }
+  }, [location]);
+
   return (
-    <View style={styles.container}>
-      <MapView
-        provider={PROVIDER_GOOGLE}
-        style={styles.map}
-        initialRegion={initialRegion}
-        showsUserLocation={true}
-        loadingEnabled={true}
-      >
-        <Marker coordinate={initialRegion} title="Start Position" />
-      </MapView>
-    </View>
+    <MapView
+      ref={mapRef}
+      provider={PROVIDER_GOOGLE}
+      style={{ flex: 1 }} // Parent controls size
+      initialRegion={region}
+      showsUserLocation={true}
+      showsMyLocationButton={true}
+      loadingEnabled={true}
+    >
+      <Marker coordinate={region} title="Start Position" />
+    </MapView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-  },
-});
