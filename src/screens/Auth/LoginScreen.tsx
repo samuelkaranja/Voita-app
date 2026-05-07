@@ -102,6 +102,11 @@ export default function LoginScreen() {
               <TouchableOpacity onPress={() => navigation.navigate('App')}>
                 <Text style={styles.signupLink}>HomePage</Text>
               </TouchableOpacity>
+
+              {/* TEMP NAV */}
+              <TouchableOpacity onPress={() => navigation.navigate('OTP')}>
+                <Text style={styles.signupLink}>OTPScreen</Text>
+              </TouchableOpacity>
             </View>
           </ScrollView>
         </TouchableWithoutFeedback>
@@ -212,5 +217,6 @@ const styles = StyleSheet.create({
   signupLink: {
     color: '#0d2b1f',
     fontWeight: '700',
+    textDecorationLine: 'underline',
   },
 });

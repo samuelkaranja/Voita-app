@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     fontSize: 15,
     color: '#333333',
-    
+
     /* iOS shadow */
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 18,
     paddingVertical: 5,
-    
+
     /* iOS shadow */
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -249,5 +249,6 @@ const styles = StyleSheet.create({
   loginLink: {
     color: '#111827',
     fontWeight: '700',
+    textDecorationLine: 'underline',
   },
 });
