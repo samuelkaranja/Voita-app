@@ -1,9 +1,20 @@
 import React, { useRef, useEffect } from 'react';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 
-export default function MapViewComponent({ location }: any) {
+interface Props {
+  location: any;
+  places: any[];
+  routeCoords: any[];
+}
+
+export default function MapViewComponent({
+  location,
+  places,
+  routeCoords,
+}: Props) {
   const mapRef = useRef<MapView | null>(null);
 
+  // Ensure location exists
   if (location?.latitude == null || location?.longitude == null) {
     return null;
   }
@@ -15,7 +26,7 @@ export default function MapViewComponent({ location }: any) {
     longitudeDelta: 0.005,
   };
 
-  // Smooth camera animation
+  // Smooth camera animation (KEEP THIS)
   useEffect(() => {
     if (mapRef.current) {
       mapRef.current.animateToRegion(region, 1000);
@@ -26,13 +37,36 @@ export default function MapViewComponent({ location }: any) {
     <MapView
       ref={mapRef}
       provider={PROVIDER_GOOGLE}
-      style={{ flex: 1 }} // Parent controls size
+      style={{ flex: 1 }}
       initialRegion={region}
       showsUserLocation={true}
       showsMyLocationButton={true}
       loadingEnabled={true}
     >
+      {/* USER START MARKER */}
       <Marker coordinate={region} title="Start Position" />
+
+      {/* PLACES FROM BACKEND */}
+      {places?.map((place: any, index: number) => (
+        <Marker
+          key={index}
+          coordinate={{
+            latitude: place.lat,
+            longitude: place.lng,
+          }}
+          title={place.name}
+          description={place.vicinity}
+        />
+      ))}
+
+      {/* SAFE ROUTE */}
+      {routeCoords?.length > 0 && (
+        <Polyline
+          coordinates={routeCoords}
+          strokeWidth={4}
+          strokeColor="#0d2b1f"
+        />
+      )}
     </MapView>
   );
 }

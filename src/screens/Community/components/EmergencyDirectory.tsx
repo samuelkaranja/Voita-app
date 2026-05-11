@@ -6,9 +6,24 @@ import {
   Car,
   Construction,
   HeartPulse,
+  LucideIcon,
 } from 'lucide-react-native';
 
-const ContactRow = ({ Icon, title, sub, iconColor, bgColor }) => (
+type ContactRowProps = {
+  Icon: LucideIcon;
+  title: string;
+  sub: string;
+  iconColor: string;
+  bgColor: string;
+};
+
+const ContactRow = ({
+  Icon,
+  title,
+  sub,
+  iconColor,
+  bgColor,
+}: ContactRowProps) => (
   <TouchableOpacity style={styles.row}>
     <View style={[styles.iconBox, { backgroundColor: bgColor }]}>
       <Icon color={iconColor} size={20} />

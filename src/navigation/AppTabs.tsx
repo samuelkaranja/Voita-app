@@ -1,7 +1,5 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-
-// Lucide icons
 import {
   Home,
   ShoppingCart,
@@ -15,14 +13,13 @@ import MarketplaceHeader from '../components/MarketplaceHeader';
 import CommunityHeader from '../components/CommunityHeader';
 import InsuranceHeader from '../components/InsuranceHeader';
 import ClaimsHeader from '../components/ClaimsHeader';
-import ProfileHeader from '../components/ProfileHeader';
 
 import HomeScreen from '../screens/Home/HomeScreen';
 import MarketplaceScreen from '../screens/Marketplace/MarketplaceScreen';
 import CommunityScreen from '../screens/Community/CommunityScreen';
 import InsuranceScreen from '../screens/Insurance/InsuranceScreen';
 import ClaimsScreen from '../screens/Claims/ClaimsScreen';
-import ProfileScreen from '../screens/Profile/ProfileScreen';
+import ProfileStack from './ProfileStack';
 
 const Tab = createBottomTabNavigator();
 
@@ -80,8 +77,8 @@ export default function AppTabs() {
       />
       <Tab.Screen
         name="Profile"
-        component={ProfileScreen}
-        options={{ header: () => <ProfileHeader /> }}
+        component={ProfileStack}
+        options={{ headerShown: false }}
       />
     </Tab.Navigator>
   );

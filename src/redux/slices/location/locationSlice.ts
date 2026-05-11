@@ -1,7 +1,7 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice } from '@reduxjs/toolkit';
 
 const locationSlice = createSlice({
-  name: "location",
+  name: 'location',
   initialState: {
     currentLocation: null,
     speed: 0,

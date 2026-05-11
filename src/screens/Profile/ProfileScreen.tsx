@@ -1,5 +1,12 @@
 import React from 'react';
-import { StatusBar, View, StyleSheet, ScrollView } from 'react-native';
+import {
+  StatusBar,
+  View,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Text,
+} from 'react-native';
 import { Droplet, Gauge } from 'lucide-react-native';
 
 import ProfileHeader from './components/ProfileHeader';
@@ -8,7 +15,23 @@ import InfoCard from './components/InfoCard';
 import TireConfigCard from './components/TireConfigCard';
 import CriticalRemindersSection from './components/CriticalRemindersSection';
 
+import { useDispatch } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
+import { logout } from '../../redux/slices/auth/authSlice';
+
 export default function ProfileScreen() {
+  const dispatch = useDispatch();
+  const navigation = useNavigation<any>();
+
+  const handleLogout = () => {
+    dispatch(logout());
+
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+  };
+
   return (
     <>
       <StatusBar backgroundColor="#001810" barStyle="light-content" />
@@ -36,6 +59,10 @@ export default function ProfileScreen() {
         <TireConfigCard />
 
         <CriticalRemindersSection />
+
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
       </ScrollView>
     </>
   );
@@ -52,5 +79,20 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 15,
     marginBottom: 10,
+  },
+
+  logoutButton: {
+    marginTop: 30,
+    marginBottom: 30,
+    backgroundColor: '#ff3b30',
+    paddingVertical: 16,
+    borderRadius: 30,
+    alignItems: 'center',
+  },
+
+  logoutText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

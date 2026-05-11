@@ -3,6 +3,18 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 // Updated icon import
 import { MoreHorizontal, ThumbsUp, MessageSquare } from 'lucide-react-native';
 
+type NewsCardProps = {
+  author: string;
+  time: string;
+  tag: string;
+  badge: string;
+  title: string;
+  content: string;
+  likes?: number;
+  comments?: number;
+  onJoinPress: () => void;
+};
+
 const NewsCard = ({
   author,
   time,
@@ -12,7 +24,7 @@ const NewsCard = ({
   content,
   likes = 24,
   comments = 8,
-}) => {
+}: NewsCardProps) => {
   return (
     <View style={styles.cardContainer}>
       {/* Header Section */}
@@ -33,7 +45,6 @@ const NewsCard = ({
             <Text style={styles.authorName}>{author}</Text>
             <Text style={styles.timeText}>{time}</Text>
             <TouchableOpacity style={styles.moreOptions} hitSlop={10}>
-              {/* Lucide MoreHorizontal */}
               <MoreHorizontal size={18} color="#6B7280" />
             </TouchableOpacity>
           </View>
@@ -128,6 +139,9 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     marginLeft: 8,
     flex: 1,
+  },
+  moreOptions: {
+    marginLeft: 8,
   },
   tagRow: {
     flexDirection: 'row',

@@ -2,12 +2,24 @@ import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Flame, Venus, AlertTriangle } from 'lucide-react-native';
 
-export default function TagSelector({ selected, setSelected }) {
+interface Props {
+  selected: string | null;
+  setSelected: (value: string) => void;
+  onSelect: (value: string) => void;
+}
+
+export default function TagSelector({
+  selected,
+  setSelected,
+  onSelect,
+}: Props) {
   const tags = [
     { label: 'Petrol', icon: Flame },
     { label: 'Lady-Friendly', icon: Venus },
     { label: 'Emergency', icon: AlertTriangle },
   ];
+
+  console.log('onSelect:', onSelect);
 
   return (
     <View style={styles.container}>
@@ -18,7 +30,11 @@ export default function TagSelector({ selected, setSelected }) {
         return (
           <TouchableOpacity
             key={tag.label}
-            onPress={() => setSelected(tag.label)}
+            onPress={() => {
+              console.log('TAG CLICKED:', tag.label);
+              setSelected(tag.label);
+              onSelect && onSelect(tag.label);
+            }}
             style={[styles.tag, isActive && styles.activeTag]}
           >
             <Icon

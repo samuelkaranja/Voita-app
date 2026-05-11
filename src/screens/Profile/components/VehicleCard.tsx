@@ -1,14 +1,20 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Pencil } from 'lucide-react-native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { ProfileStackParamList } from '../../../navigation/ProfileStack';
 
 export default function VehicleCard() {
+  const navigation = useNavigation<NavigationProp<ProfileStackParamList>>();
+
   return (
     <View style={{ marginBottom: 18 }}>
       <View style={styles.headerRow}>
         <Text style={styles.sectionTitle}>My Vehicle</Text>
 
-        <TouchableOpacity style={styles.editRow}>
+        <TouchableOpacity
+          style={styles.editRow}
+        >
           <Pencil size={16} color="#006c52" />
           <Text style={styles.editText}>Edit Profile</Text>
         </TouchableOpacity>
@@ -56,6 +62,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     lineHeight: 20,
+    textDecorationLine: 'underline',
   },
   card: {
     borderRadius: 24,

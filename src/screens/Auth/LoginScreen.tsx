@@ -10,17 +10,57 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Eye, EyeOff } from 'lucide-react-native';
 
+import { useDispatch } from 'react-redux';
+import { loginUser, sendOtp } from '../../redux/slices/auth/authSlice';
+import { useSelector } from 'react-redux';
+import Toast from 'react-native-toast-message';
+
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
+  const dispatch = useDispatch<any>();
+  const loading = useSelector((state: any) => state.auth.loading.login);
 
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [secure, setSecure] = useState(true);
+
+  const handleLogin = async () => {
+    const res = await dispatch(loginUser({ phone, password }));
+
+    if (res.meta.requestStatus === 'fulfilled') {
+      Toast.show({
+        type: 'success',
+        text1: 'Login Successful',
+        text2: 'Welcome back 👋',
+      });
+    } else {
+      const error = res.payload;
+
+      if (error?.includes('not verified')) {
+        Toast.show({
+          type: 'info',
+          text1: 'Verification Required',
+          text2: 'Please verify your phone number first',
+        });
+
+        await dispatch(sendOtp(phone));
+
+        navigation.navigate('OTP');
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Login Failed',
+          text2: error || 'Something went wrong',
+        });
+      }
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -85,8 +125,16 @@ export default function LoginScreen() {
               </TouchableOpacity>
 
               {/* LOGIN BUTTON */}
-              <TouchableOpacity style={styles.button}>
-                <Text style={styles.buttonText}>Login</Text>
+              <TouchableOpacity
+                style={[styles.button, loading && { opacity: 0.7 }]}
+                onPress={handleLogin}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Login</Text>
+                )}
               </TouchableOpacity>
 
               {/* SIGN UP */}
@@ -97,16 +145,6 @@ export default function LoginScreen() {
                   <Text style={styles.signupLink}> Sign Up</Text>
                 </TouchableOpacity>
               </View>
-
-              {/* TEMP NAV */}
-              <TouchableOpacity onPress={() => navigation.navigate('App')}>
-                <Text style={styles.signupLink}>HomePage</Text>
-              </TouchableOpacity>
-
-              {/* TEMP NAV */}
-              <TouchableOpacity onPress={() => navigation.navigate('OTP')}>
-                <Text style={styles.signupLink}>OTPScreen</Text>
-              </TouchableOpacity>
             </View>
           </ScrollView>
         </TouchableWithoutFeedback>

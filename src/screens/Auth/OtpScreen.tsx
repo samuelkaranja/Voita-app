@@ -7,12 +7,27 @@ import {
   TouchableOpacity,
   Keyboard,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
+
+import { useDispatch, useSelector } from 'react-redux';
+import { verifyOtp, sendOtp } from '../../redux/slices/auth/authSlice';
+import { useNavigation } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 
 export default function OtpScreen() {
   const [otp, setOtp] = useState(['', '', '', '']);
+  const verifyLoading = useSelector(
+    (state: any) => state.auth.loading.verifyOtp,
+  );
+
+  const resendLoading = useSelector((state: any) => state.auth.loading.sendOtp);
 
   const inputs = useRef<Array<TextInput | null>>([]);
+
+  const dispatch = useDispatch<any>();
+  const navigation = useNavigation<any>();
+  const phone = useSelector((state: any) => state.auth.phone);
 
   const handleChange = (text: string, index: number) => {
     if (!/^\d*$/.test(text)) return; // Only numbers
@@ -33,10 +48,36 @@ export default function OtpScreen() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const code = otp.join('');
-    console.log('OTP Code:', code);
-    // TODO: Verify OTP
+
+    const res = await dispatch(verifyOtp({ phone, otp: code }));
+
+    if (res.meta.requestStatus === 'fulfilled') {
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Phone verified successfully',
+      });
+
+      navigation.navigate('Login');
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Verification Failed',
+        text2: res.payload || 'Something went wrong',
+      });
+    }
+  };
+
+  const handleResend = () => {
+    dispatch(sendOtp(phone));
+
+    Toast.show({
+      type: 'info',
+      text1: 'OTP Sent',
+      text2: 'A new code has been sent to your phone',
+    });
   };
 
   return (
@@ -56,7 +97,9 @@ export default function OtpScreen() {
             {otp.map((digit, index) => (
               <TextInput
                 key={index}
-                ref={ref => (inputs.current[index] = ref)}
+                ref={ref => {
+                  inputs.current[index] = ref;
+                }}
                 style={styles.input}
                 keyboardType="number-pad"
                 maxLength={1}
@@ -72,13 +115,25 @@ export default function OtpScreen() {
           </View>
 
           {/* Continue Button */}
-          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-            <Text style={styles.buttonText}>Continue</Text>
+          <TouchableOpacity
+            style={[styles.button, verifyLoading && { opacity: 0.7 }]}
+            onPress={handleSubmit}
+            disabled={verifyLoading}
+          >
+            {verifyLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Continue</Text>
+            )}
           </TouchableOpacity>
 
           {/* Resend */}
-          <TouchableOpacity>
-            <Text style={styles.resendText}>Resend OTP</Text>
+          <TouchableOpacity onPress={handleResend} disabled={resendLoading}>
+            {resendLoading ? (
+              <ActivityIndicator />
+            ) : (
+              <Text style={styles.resendText}>Resend OTP</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>

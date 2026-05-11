@@ -10,14 +10,22 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
+  ActivityIndicator,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Eye, EyeOff } from 'lucide-react-native';
 
+import { useDispatch } from 'react-redux';
+import { registerUser, sendOtp } from '../../redux/slices/auth/authSlice';
+import { useSelector } from 'react-redux';
+import Toast from 'react-native-toast-message';
+
 export default function SignUpScreen() {
   const navigation = useNavigation<any>();
+  const dispatch = useDispatch<any>();
+  const loading = useSelector((state: any) => state.auth.loading.register);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -33,6 +41,45 @@ export default function SignUpScreen() {
 
   const handleChange = (key: string, value: string) => {
     setForm({ ...form, [key]: value });
+  };
+
+  const handleSubmit = async () => {
+    if (form.password !== form.confirmPassword) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Passwords do not match',
+      });
+      return;
+    }
+
+    try {
+      const res = await dispatch(registerUser(form));
+
+      if (res.meta.requestStatus === 'fulfilled') {
+        await dispatch(sendOtp(form.phone));
+
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Account created! OTP sent to your phone',
+        });
+
+        navigation.navigate('OTP');
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Registration Failed',
+          text2: res.payload || 'Something went wrong',
+        });
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Unexpected error occurred',
+      });
+    }
   };
 
   return (
@@ -129,8 +176,16 @@ export default function SignUpScreen() {
             </View>
 
             {/* BUTTON */}
-            <TouchableOpacity style={styles.button}>
-              <Text style={styles.buttonText}>Create Account</Text>
+            <TouchableOpacity
+              style={[styles.button, loading && { opacity: 0.7 }]}
+              onPress={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Create Account</Text>
+              )}
             </TouchableOpacity>
 
             {/* LOGIN */}
