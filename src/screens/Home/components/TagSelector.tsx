@@ -30,11 +30,7 @@ export default function TagSelector({
         return (
           <TouchableOpacity
             key={tag.label}
-            onPress={() => {
-              console.log('TAG CLICKED:', tag.label);
-              setSelected(tag.label);
-              onSelect && onSelect(tag.label);
-            }}
+            onPress={() => onSelect(tag.label)}
             style={[styles.tag, isActive && styles.activeTag]}
           >
             <Icon

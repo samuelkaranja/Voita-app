@@ -14,6 +14,7 @@ export default function VehicleCard() {
 
         <TouchableOpacity
           style={styles.editRow}
+          onPress={() => navigation.navigate('EditProfile')}
         >
           <Pencil size={16} color="#006c52" />
           <Text style={styles.editText}>Edit Profile</Text>

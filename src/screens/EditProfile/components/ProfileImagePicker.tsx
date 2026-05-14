@@ -1,31 +1,35 @@
-import React from 'react';
-import { View, Image, TouchableOpacity, Text } from 'react-native';
+import React, { useState } from 'react';
+import { View, Image, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 
-export default function ProfileImagePicker({
-  image,
-  onChange,
-}: any) {
-  const pickImage = async () => {
-    const result = await launchImageLibrary({
-      mediaType: 'photo',
-    });
+export default function ProfileImagePicker() {
+  const [image, setImage] = useState<string | null>(null);
 
-    if (result.assets?.length) {
-      onChange(result.assets[0]);
+  const pickImage = async () => {
+    const result = await launchImageLibrary({ mediaType: 'photo' });
+
+    if (!result.didCancel && result.assets) {
+      setImage(result.assets[0].uri || null);
     }
   };
 
   return (
-    <View>
-      <Image
-        source={{ uri: image }}
-        style={{ width: 100, height: 100, borderRadius: 50 }}
-      />
-
+    <View style={styles.container}>
       <TouchableOpacity onPress={pickImage}>
-        <Text>Change Photo</Text>
+        <Image
+          source={
+            image ? { uri: image } : require('../../../assets/images/car.png')
+          }
+          style={styles.image}
+        />
       </TouchableOpacity>
+      <Text style={styles.text}>Change Profile Photo</Text>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { alignItems: 'center', marginBottom: 20 },
+  image: { width: 110, height: 110, borderRadius: 50 },
+  text: { marginTop: 10, color: '#006c52' },
+});
