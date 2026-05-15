@@ -9,7 +9,7 @@ import {
 import UserDetailsTab from './components/UserDetailsTab';
 import VehicleDetailsTab from './components/VehicleDetailsTab';
 
-export default function EditProfileScreen() {
+export default function EditProfileScreen({ token }: any) {
   const [activeTab, setActiveTab] = useState<'user' | 'vehicle'>('user');
 
   return (
@@ -47,7 +47,7 @@ export default function EditProfileScreen() {
 
       {/* Content */}
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        {activeTab === 'user' ? <UserDetailsTab /> : <VehicleDetailsTab />}
+        {activeTab === 'user' ? <UserDetailsTab token={token} /> : <VehicleDetailsTab token={token} />}
       </ScrollView>
     </View>
   );

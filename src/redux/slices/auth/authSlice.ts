@@ -3,8 +3,16 @@ import axios from 'axios';
 import { BASE_URL } from '../../../api/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+interface User {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  profileImageUrl: string | null;
+}
+
 interface AuthState {
-  user: any | null;
+  user: User | null;
   token: string | null;
   error: string | null;
   phone: string | null;
@@ -31,7 +39,18 @@ const initialState: AuthState = {
   },
 };
 
-// LOAD STORED AUTH (AUTO LOGIN)
+
+// ✅ MAPPER FUNCTION (KEY FIX)
+const mapDriverToUser = (driver: any): User => ({
+  firstName: driver?.first_name ?? "",
+  lastName: driver?.last_name ?? "",
+  email: driver?.email ?? "",
+  phone: driver?.phone ?? "",
+  profileImageUrl: driver?.profile_image_url ?? null,
+});
+
+
+// 🔄 LOAD STORED AUTH
 export const loadStoredAuth = createAsyncThunk(
   'auth/loadStoredAuth',
   async (_, { rejectWithValue }) => {
@@ -40,22 +59,22 @@ export const loadStoredAuth = createAsyncThunk(
 
       if (!stored) return null;
 
-      const { token, expiry } = JSON.parse(stored);
+      const { token, user, expiry } = JSON.parse(stored);
 
-      // expired
       if (Date.now() > expiry) {
         await AsyncStorage.removeItem('authData');
         return null;
       }
 
-      return { token };
+      return { token, user };
     } catch (err) {
       return rejectWithValue('Failed to load auth');
     }
   },
 );
 
-// REGISTER
+
+// 📝 REGISTER
 export const registerUser = createAsyncThunk(
   'auth/register',
   async (data: any, { rejectWithValue }) => {
@@ -77,7 +96,8 @@ export const registerUser = createAsyncThunk(
   },
 );
 
-// SEND OTP
+
+// 📲 SEND OTP
 export const sendOtp = createAsyncThunk(
   'auth/sendOtp',
   async (phone: string, { rejectWithValue }) => {
@@ -96,7 +116,8 @@ export const sendOtp = createAsyncThunk(
   },
 );
 
-// VERIFY OTP
+
+// ✅ VERIFY OTP
 export const verifyOtp = createAsyncThunk(
   'auth/verifyOtp',
   async (
@@ -117,7 +138,8 @@ export const verifyOtp = createAsyncThunk(
   },
 );
 
-// LOGIN
+
+// 🔐 LOGIN
 export const loginUser = createAsyncThunk(
   'auth/login',
   async ({ phone, password }: any, { rejectWithValue }) => {
@@ -134,6 +156,7 @@ export const loginUser = createAsyncThunk(
   },
 );
 
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -141,13 +164,13 @@ const authSlice = createSlice({
     logout: state => {
       state.user = null;
       state.token = null;
-
       AsyncStorage.removeItem('authData');
     },
   },
   extraReducers: builder => {
     builder
-      // LOAD STORED AUTH
+
+      // 🔄 LOAD STORED AUTH
       .addCase(loadStoredAuth.pending, state => {
         state.loading.init = true;
       })
@@ -156,13 +179,15 @@ const authSlice = createSlice({
 
         if (action.payload) {
           state.token = action.payload.token;
+          state.user = action.payload.user; // ✅ restore user
         }
       })
       .addCase(loadStoredAuth.rejected, state => {
         state.loading.init = false;
       })
 
-      // REGISTER
+
+      // 📝 REGISTER
       .addCase(registerUser.pending, state => {
         state.loading.register = true;
         state.error = null;
@@ -176,7 +201,8 @@ const authSlice = createSlice({
         state.error = action.payload as string;
       })
 
-      // SEND OTP
+
+      // 📲 SEND OTP
       .addCase(sendOtp.pending, state => {
         state.loading.sendOtp = true;
       })
@@ -187,7 +213,8 @@ const authSlice = createSlice({
         state.loading.sendOtp = false;
       })
 
-      // VERIFY OTP
+
+      // ✅ VERIFY OTP
       .addCase(verifyOtp.pending, state => {
         state.loading.verifyOtp = true;
       })
@@ -198,22 +225,28 @@ const authSlice = createSlice({
         state.loading.verifyOtp = false;
       })
 
-      // LOGIN
+
+      // 🔐 LOGIN (🔥 FIXED)
       .addCase(loginUser.pending, state => {
         state.loading.login = true;
         state.error = null;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading.login = false;
-        state.token = action.payload.access_token;
-        state.user = action.payload.user;
+
+        const token = action.payload.access_token;
+        const mappedUser = mapDriverToUser(action.payload.driver_info);
+
+        state.token = token;
+        state.user = mappedUser;
 
         const expiryTime = Date.now() + 1800 * 1000;
 
         AsyncStorage.setItem(
           'authData',
           JSON.stringify({
-            token: action.payload.access_token,
+            token,
+            user: mappedUser,
             expiry: expiryTime,
           }),
         );

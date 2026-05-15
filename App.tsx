@@ -25,7 +25,7 @@ export default function App() {
     <Provider store={store}>
       <NavigationContainer>
         <AppContent />
-        <Toast position="top" visibilityTime={3000} />
+        <Toast position="top" visibilityTime={6000} />
       </NavigationContainer>
     </Provider>
   );
