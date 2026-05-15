@@ -14,20 +14,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # ✅ Use Node 20 (fixes Metro + modern JS issues)
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
+          cache: npm
 
-      - run: npm install
+      # ✅ Faster + more reliable installs in CI
+      - run: npm ci
 
+      # Java setup
       - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: 17
 
+      # Make gradlew executable
       - run: chmod +x android/gradlew
 
-      # ✅ ADD THIS STEP (CRITICAL FIX)
+      # ✅ React Native JS bundle step
       - name: Bundle React Native JS
         run: |
           mkdir -p android/app/src/main/assets
@@ -38,11 +43,13 @@ jobs:
             --bundle-output android/app/src/main/assets/index.android.bundle \
             --assets-dest android/app/src/main/res/
 
+      # ✅ Build APK
       - name: Build Release APK
         run: |
           cd android
           ./gradlew assembleRelease
 
+      # Upload APK artifact
       - uses: actions/upload-artifact@v4
         with:
           name: app-release.apk
