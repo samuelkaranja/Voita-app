@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Text,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Droplet, Gauge } from 'lucide-react-native';
 
 import ProfileHeader from './components/ProfileHeader';
@@ -20,6 +21,8 @@ import { useNavigation } from '@react-navigation/native';
 import { logout } from '../../redux/slices/auth/authSlice';
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
+
   const dispatch = useDispatch();
   const navigation = useNavigation<any>();
 
@@ -36,7 +39,14 @@ export default function ProfileScreen() {
     <>
       <StatusBar backgroundColor="#001810" barStyle="light-content" />
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + 95 },
+        ]}
+      >
         <ProfileHeader />
 
         <VehicleCard />

@@ -1,5 +1,9 @@
 import React from 'react';
 import { StatusBar, ScrollView, StyleSheet, View } from 'react-native';
+
+// 1. IMPORT THE SAFE AREA HOOK
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import CommunityHero from './components/CommunityHero';
 import EmergencyDirectory from './components/EmergencyDirectory';
 import ServiceScoutCard from './components/ServiceScoutCard';
@@ -46,11 +50,18 @@ const NEWS_DATA = [
 ];
 
 export default function CommunityScreen() {
+  // 2. INITIALIZE THE SAFE AREA INSETS
+  const insets = useSafeAreaInsets();
+
   return (
     <>
       <StatusBar backgroundColor="#001810" barStyle="light-content" />
 
-      <ScrollView style={styles.screen}>
+      {/* 3. ASSIGN THE SPACING TO contentContainerStyle */}
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 95 }}
+      >
         <CommunityHero />
         <EmergencyDirectory />
         <ServiceScoutCard />
@@ -82,7 +93,6 @@ export default function CommunityScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    paddingBottom: 30,
     backgroundColor: '#f3f6f4',
   },
 });

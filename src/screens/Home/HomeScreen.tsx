@@ -3,6 +3,9 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-toast-message';
 
+// 1. IMPORT THE SAFE AREA HOOK
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import TagSelector from './components/TagSelector';
 import SpeedWidget from './components/SpeedWidget';
 import MapViewComponent from './components/MapViewComponent';
@@ -24,9 +27,9 @@ export default function HomeScreen() {
   const dispatch = useDispatch<any>();
   const { location } = useLocation();
 
-  // =========================
-  // REDUX STATE (UPDATED)
-  // =========================
+  // 2. INITIALIZE THE HOOK
+  const insets = useSafeAreaInsets();
+
   const { places, safeRouteCoords, normalRouteCoords, normalRouteInfo } =
     useSelector((state: any) => state.maps);
 
@@ -34,9 +37,6 @@ export default function HomeScreen() {
   const duration = normalRouteInfo?.duration;
 
   const destination = useSelector((state: any) => state.maps.destination);
-
-  const routeCoords =
-    safeRouteCoords.length > 0 ? safeRouteCoords : normalRouteCoords;
 
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
@@ -62,13 +62,6 @@ export default function HomeScreen() {
 
     const { latitude, longitude } = location.coords;
 
-    console.log('🚀 Fetching route with:', {
-      origin_lat: latitude,
-      origin_lng: longitude,
-      destination_lat: destination.latitude,
-      destination_lng: destination.longitude,
-    });
-
     dispatch(
       fetchNormalRoute({
         origin_lat: latitude,
@@ -79,19 +72,8 @@ export default function HomeScreen() {
     );
   }, [destination, location, dispatch]);
 
-  useEffect(() => {
-    console.log('DESTINATION UPDATED:', destination);
-  }, [destination]);
-
-  useEffect(() => {
-    console.log('🛣 NORMAL ROUTE COORDS:', normalRouteCoords.length);
-  }, [normalRouteCoords]);
-
   const speed = location?.coords?.speed ?? 0;
 
-  // =========================
-  // TAG HANDLER (CORE LOGIC)
-  // =========================
   const handleTagSelect = (tag: string) => {
     if (!location?.coords) return;
 
@@ -100,25 +82,16 @@ export default function HomeScreen() {
     dispatch(clearMapData());
     setSelectedTag(tag);
 
-    // -------------------------
-    // PETROL
-    // -------------------------
     if (tag === 'Petrol') {
       dispatch(fetchPetrolStations({ lat: latitude, lng: longitude }));
       return;
     }
 
-    // -------------------------
-    // EMERGENCY
-    // -------------------------
     if (tag === 'Emergency') {
       dispatch(fetchEmergency({ lat: latitude, lng: longitude }));
       return;
     }
 
-    // -------------------------
-    // LADY FRIENDLY (SAFE ROUTE)
-    // -------------------------
     if (tag === 'Lady-Friendly') {
       if (!destination) {
         Toast.show({
@@ -197,8 +170,9 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* DESTINATION INPUT */}
-      <DestinationCard />
+      {/* 3. INJECT THE DYNAMIC BOTTOM POSITION VALUE TO DESTINATION CARD */}
+      {/* No extra nested structural View containers required here anymore */}
+      <DestinationCard style={{ bottom: insets.bottom + 95 }} />
     </View>
   );
 }
@@ -215,7 +189,7 @@ const styles = StyleSheet.create({
   },
   centerOverlay: {
     position: 'absolute',
-    top: 20,
+    top: 10,
     width: '100%',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -236,13 +210,11 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-
   routeDistance: {
     fontSize: 16,
     fontWeight: '700',
     color: '#0d2b1f',
   },
-
   routeDuration: {
     fontSize: 13,
     color: '#6b7280',

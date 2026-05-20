@@ -67,6 +67,7 @@ const handleLogin = async () => {
         text1: 'Login Failed',
         text2: error || 'Something went wrong',
       });
+      console.log(error)
     }
   }
 };

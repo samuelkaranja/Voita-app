@@ -47,7 +47,11 @@ export default function EditProfileScreen({ token }: any) {
 
       {/* Content */}
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        {activeTab === 'user' ? <UserDetailsTab token={token} /> : <VehicleDetailsTab token={token} />}
+        {activeTab === 'user' ? (
+          <UserDetailsTab token={token} />
+        ) : (
+          <VehicleDetailsTab token={token} />
+        )}
       </ScrollView>
     </View>
   );
@@ -70,14 +74,14 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 3,
-    borderColor: '#006c52',
+    borderColor: '#0d2b1f',
   },
   tabText: {
     color: '#888',
     fontWeight: '500',
   },
   activeTabText: {
-    color: '#006c52',
+    color: '#0d2b1f',
     fontWeight: '700',
   },
 });

@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   save: {
     marginTop: 30,
     marginBottom: 30,
-    backgroundColor: "#006c52",
+    backgroundColor: "#0d2b1f",
     paddingVertical: 20,
     borderRadius: 20,
     alignItems: "center",

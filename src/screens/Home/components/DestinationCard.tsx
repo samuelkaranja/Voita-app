@@ -16,7 +16,8 @@ import { setDestination } from '../../../redux/slices/map/mapsSlice';
 
 const GOOGLE_KEY = 'AIzaSyDAaZnQ6p4Zase38K03Rk8LbCyGlfmaUCg';
 
-export default function DestinationCard() {
+// 1. ADD THE style PROP HERE
+export default function DestinationCard({ style }: { style?: any }) {
   const dispatch = useDispatch();
 
   const [text, setText] = useState('');
@@ -112,13 +113,11 @@ export default function DestinationCard() {
     if (!text.trim()) return;
 
     try {
-      // If user already selected suggestion → use first match
       if (suggestions.length > 0) {
         await selectPlace(suggestions[0]);
         return;
       }
 
-      // fallback: autocomplete first
       const res = await fetch(
         `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
           text,
@@ -147,7 +146,8 @@ export default function DestinationCard() {
   };
 
   return (
-    <View style={styles.container}>
+    // 2. COMBINE THE BASE CONTAINER STYLE WITH THE PASSED IN DYNAMIC STYLE
+    <View style={[styles.container, style]}>
       <Text style={styles.title}>Destination</Text>
 
       {/* INPUT */}
@@ -201,7 +201,6 @@ export default function DestinationCard() {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 30,
     left: 16,
     width: '65%',
     backgroundColor: '#f1f7f6',
@@ -214,49 +213,42 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
   },
-
   title: {
     fontSize: 13,
     fontWeight: '800',
     color: '#006c52',
     marginBottom: 8,
   },
-
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-
   input: {
     flex: 1,
     fontSize: 14,
     color: '#0d2b1f',
     marginRight: 8,
   },
-
   icon: {
     padding: 10,
     backgroundColor: '#001810',
     borderRadius: 16,
   },
-  
   suggestionsBox: {
-  marginTop: 8,
-  backgroundColor: '#fff',
-  borderRadius: 10,
-  maxHeight: 200,
-  overflow: 'hidden',
-},
-
-suggestionItem: {
-  padding: 12,
-  borderBottomWidth: 1,
-  borderBottomColor: '#eee',
-},
-
-suggestionText: {
-  fontSize: 13,
-  color: '#0d2b1f',
-},
+    marginTop: 8,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    maxHeight: 200,
+    overflow: 'hidden',
+  },
+  suggestionItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  suggestionText: {
+    fontSize: 13,
+    color: '#0d2b1f',
+  },
 });

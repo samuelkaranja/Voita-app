@@ -1,5 +1,9 @@
 import React from 'react';
 import { StatusBar, ScrollView, StyleSheet } from 'react-native';
+
+// 1. IMPORT THE SAFE AREA HOOK
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import MarketplaceHero from './components/MarketplaceHero';
 import MarketplaceSearch from './components/MarketplaceSearch';
 import MarketplaceServices from './components/MarketplaceServices';
@@ -52,11 +56,19 @@ const PROVIDERS_DATA = [
 ];
 
 export default function MarketplaceScreen() {
+  // 2. INITIALIZE THE HOOK
+  const insets = useSafeAreaInsets();
+
   return (
     <>
       <StatusBar backgroundColor="#001810" barStyle="light-content" />
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* 3. ADD contentContainerStyle FOR BOTTOM OFFSET IN SCROLLVIEW */}
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 95 }}
+        showsVerticalScrollIndicator={false}
+      >
         <MarketplaceHero />
         <MarketplaceSearch />
         <MarketplaceServices />
@@ -69,6 +81,7 @@ export default function MarketplaceScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1, // Added flex: 1 to ensure full-screen sizing
     backgroundColor: '#F5F7F6',
   },
 });
