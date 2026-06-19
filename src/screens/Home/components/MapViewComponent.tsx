@@ -1,6 +1,8 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { StyleSheet, View } from 'react-native';
+import { useDayNight } from '../../../hooks/useDayNight';
+import { DAY_MAP_STYLE, NIGHT_MAP_STYLE } from '../../../constants/mapStyles';
 
 interface Props {
   location: any;
@@ -22,6 +24,9 @@ export default function MapViewComponent({
   destination,
 }: Props) {
   const mapRef = useRef<MapView | null>(null);
+
+  const { isNight } = useDayNight(location?.latitude, location?.longitude);
+  const mapStyle = isNight ? NIGHT_MAP_STYLE : DAY_MAP_STYLE;
 
   /* Safe Region */
   const region = useMemo(() => {
@@ -109,6 +114,7 @@ export default function MapViewComponent({
       showsUserLocation
       showsMyLocationButton
       loadingEnabled
+      customMapStyle={mapStyle}
     >
       {/* User Location */}
       <Marker coordinate={region} title="You are here" />
