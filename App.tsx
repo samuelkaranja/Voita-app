@@ -3,6 +3,9 @@ import { Provider, useDispatch } from 'react-redux';
 import { store } from './src/redux/store.ts';
 import { NavigationContainer } from '@react-navigation/native';
 import { enableScreens } from 'react-native-screens';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+
 import RootNavigator from './src/navigation/RootNavigator';
 import Toast from 'react-native-toast-message';
 import { loadStoredAuth } from './src/redux/slices/auth/authSlice';
@@ -22,11 +25,15 @@ function AppContent() {
 
 export default function App() {
   return (
-    <Provider store={store}>
-      <NavigationContainer>
-        <AppContent />
-        <Toast position="top" visibilityTime={6000} />
-      </NavigationContainer>
-    </Provider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Provider store={store}>
+        <NavigationContainer>
+          <BottomSheetModalProvider>
+            <AppContent />
+            <Toast position="top" visibilityTime={6000} />
+          </BottomSheetModalProvider>
+        </NavigationContainer>
+      </Provider>
+    </GestureHandlerRootView>
   );
 }

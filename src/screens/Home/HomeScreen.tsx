@@ -1,10 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-toast-message';
-
-// 1. IMPORT THE SAFE AREA HOOK
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 
 import TagSelector from './components/TagSelector';
 import SpeedWidget from './components/SpeedWidget';
@@ -26,28 +31,43 @@ import { useLocation } from '../../hooks/useLocation';
 export default function HomeScreen() {
   const dispatch = useDispatch<any>();
   const { location } = useLocation();
-
-  // 2. INITIALIZE THE HOOK
   const insets = useSafeAreaInsets();
 
-  const { places, safeRouteCoords, normalRouteCoords, normalRouteInfo } =
-    useSelector((state: any) => state.maps);
+  const sheetRef = useRef<BottomSheet>(null);
 
-  const distance = normalRouteInfo?.distance;
-  const duration = normalRouteInfo?.duration;
+  const prevDestinationRef = useRef<string | null>(null);
+
+  const {
+    places,
+    safeRouteCoords,
+    normalRouteCoords,
+    normalRouteInfo,
+    safeRouteInfo,
+  } = useSelector((state: any) => state.maps);
 
   const destination = useSelector((state: any) => state.maps.destination);
 
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
-  const [initialLocation, setInitialLocation] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
+  const isSafeRouteActive =
+    selectedTag === 'Lady-Friendly' && safeRouteCoords.length > 0;
+
+  const safety = safeRouteInfo?.safetyInsights;
+
+  const distance = isSafeRouteActive
+    ? safeRouteInfo?.distance
+    : normalRouteInfo?.distance;
+
+  const duration = isSafeRouteActive
+    ? safeRouteInfo?.duration
+    : normalRouteInfo?.duration;
+
+  const [initialLocation, setInitialLocation] = useState<any>(null);
 
   const [showFloodAlert, setShowFloodAlert] = useState(true);
   const [showCongestionAlert, setShowCongestionAlert] = useState(true);
 
+  /* Initial Location */
   useEffect(() => {
     if (location?.coords && !initialLocation) {
       setInitialLocation({
@@ -58,26 +78,63 @@ export default function HomeScreen() {
   }, [location, initialLocation]);
 
   useEffect(() => {
+    if (!destination) return;
+
+    const destinationKey = `${destination.latitude},${destination.longitude}`;
+
+    if (prevDestinationRef.current === destinationKey) return;
+
+    prevDestinationRef.current = destinationKey;
+
+    setSelectedTag(null);
+  }, [destination]);
+
+  const speed = location?.coords?.speed ?? 0;
+
+  /* Open Sheet */
+  const openSafetySheet = () => {
+    console.log('OPEN SHEET CLICKED');
+    sheetRef.current?.expand();
+  };
+
+  /* Fetch Normal Route */
+  useEffect(() => {
     if (!destination || !location?.coords) return;
 
-    const { latitude, longitude } = location.coords;
+    if (selectedTag === 'Lady-Friendly') return;
+    if (safeRouteCoords.length > 0) return;
 
     dispatch(
       fetchNormalRoute({
-        origin_lat: latitude,
-        origin_lng: longitude,
+        origin_lat: location.coords.latitude,
+        origin_lng: location.coords.longitude,
         destination_lat: destination.latitude,
         destination_lng: destination.longitude,
       }),
     );
-  }, [destination, location, dispatch]);
+  }, [destination, location, selectedTag, safeRouteCoords, dispatch]);
 
-  const speed = location?.coords?.speed ?? 0;
-
+  /* Tag Handler */
   const handleTagSelect = (tag: string) => {
     if (!location?.coords) return;
 
     const { latitude, longitude } = location.coords;
+
+    if (tag === 'Lady-Friendly' && selectedTag === 'Lady-Friendly') {
+      dispatch(clearMapData());
+
+      dispatch(
+        fetchNormalRoute({
+          origin_lat: latitude,
+          origin_lng: longitude,
+          destination_lat: destination.latitude,
+          destination_lng: destination.longitude,
+        }),
+      );
+
+      setSelectedTag(null);
+      return;
+    }
 
     dispatch(clearMapData());
     setSelectedTag(tag);
@@ -97,7 +154,6 @@ export default function HomeScreen() {
         Toast.show({
           type: 'error',
           text1: 'Destination required',
-          text2: 'Please enter where you are going first.',
         });
         return;
       }
@@ -113,9 +169,29 @@ export default function HomeScreen() {
     }
   };
 
+  /* Safety List */
+  const safetyItems = useMemo(() => {
+    if (!safety) return [];
+
+    return [
+      safety.fewerIntersections && 'Fewer complex intersections',
+      safety.highActivityAreas && 'Passes through busy public areas',
+      safety.avoidsHighRiskZones && 'Avoids low-activity / risky zones',
+      safety.congestionAvoided && 'Reduces traffic exposure risk',
+    ].filter(Boolean);
+  }, [safety]);
+
+  const snapPoints = useMemo(() => ['25%', '45%'], []);
+
+  useEffect(() => {
+    console.log('TAG:', selectedTag);
+    console.log('SAFE ROUTE:', safeRouteCoords.length);
+    console.log('NORMAL ROUTE:', normalRouteCoords.length);
+  }, [selectedTag, safeRouteCoords, normalRouteCoords]);
+
   return (
     <View style={styles.mainContainer}>
-      {/* MAP */}
+      {/* Map */}
       <View style={{ flex: 1 }}>
         {initialLocation ? (
           <MapViewComponent
@@ -123,6 +199,7 @@ export default function HomeScreen() {
             places={places}
             safeRouteCoords={safeRouteCoords}
             normalRouteCoords={normalRouteCoords}
+            destination={destination}
           />
         ) : (
           <View style={styles.centerFull}>
@@ -132,7 +209,7 @@ export default function HomeScreen() {
         )}
       </View>
 
-      {/* OVERLAY UI */}
+      {/* Overlay UI */}
       {initialLocation && (
         <View style={styles.centerOverlay} pointerEvents="box-none">
           <TagSelector
@@ -150,6 +227,19 @@ export default function HomeScreen() {
               <Text style={styles.routeDistance}>{distance}</Text>
               <Text style={styles.routeDuration}>{duration}</Text>
             </View>
+          )}
+
+          {/* Safety Badge */}
+          {isSafeRouteActive && (
+            <TouchableOpacity
+              onPress={openSafetySheet}
+              style={styles.safetyBadge}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.safetyBadgeText}>
+                🛡 Safe Route Active · Tap for details
+              </Text>
+            </TouchableOpacity>
           )}
 
           {showFloodAlert && (
@@ -170,12 +260,36 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* 3. INJECT THE DYNAMIC BOTTOM POSITION VALUE TO DESTINATION CARD */}
-      {/* No extra nested structural View containers required here anymore */}
+      {/* Destination */}
       <DestinationCard style={{ bottom: insets.bottom + 95 }} />
+
+      {/* Bottom Sheet */}
+      <BottomSheet
+        ref={sheetRef}
+        index={-1}
+        snapPoints={snapPoints}
+        enablePanDownToClose
+        backgroundStyle={{ backgroundColor: '#fff' }}
+      >
+        <BottomSheetView style={styles.sheetContent}>
+          <Text style={styles.sheetTitle}>Why this route is safer:</Text>
+
+          {safetyItems.length === 0 ? (
+            <Text style={styles.sheetEmpty}>No safety data available</Text>
+          ) : (
+            safetyItems.map((item, index) => (
+              <Text key={index} style={styles.sheetItem}>
+                • {item}
+              </Text>
+            ))
+          )}
+        </BottomSheetView>
+      </BottomSheet>
     </View>
   );
 }
+
+/* ........ Styles .......... */
 
 const styles = StyleSheet.create({
   mainContainer: {
@@ -200,24 +314,44 @@ const styles = StyleSheet.create({
   },
   routeInfoCard: {
     marginTop: 10,
-    backgroundColor: '#ffffff',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    backgroundColor: '#fff',
+    padding: 12,
     borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
   },
   routeDistance: {
-    fontSize: 16,
     fontWeight: '700',
-    color: '#0d2b1f',
   },
   routeDuration: {
+    color: '#666',
+  },
+
+  safetyBadge: {
+    marginTop: 10,
+    backgroundColor: '#E8F5E9',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+  },
+  safetyBadgeText: {
+    fontSize: 12,
+    color: '#1B5E20',
+    fontWeight: '600',
+  },
+  sheetContent: {
+    padding: 16,
+  },
+  sheetTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  sheetItem: {
     fontSize: 13,
-    color: '#6b7280',
-    marginTop: 2,
+    marginTop: 6,
+    color: '#333333',
+  },
+  sheetEmpty: {
+    fontSize: 13,
+    color: '#999',
   },
 });

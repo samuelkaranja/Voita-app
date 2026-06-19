@@ -164,12 +164,7 @@ export default function DestinationCard({ style }: { style?: any }) {
           activeOpacity={0.7}
           onPress={handleConfirmDestination}
         >
-          <View
-            style={[
-              styles.icon,
-              !text.trim() && { opacity: 0.4 },
-            ]}
-          >
+          <View style={[styles.icon, !text.trim() && { opacity: 0.4 }]}>
             <Navigation size={20} color="#ffffff" />
           </View>
         </TouchableOpacity>
@@ -180,15 +175,13 @@ export default function DestinationCard({ style }: { style?: any }) {
         <View style={styles.suggestionsBox}>
           <FlatList
             data={suggestions}
-            keyExtractor={(item) => item.place_id}
+            keyExtractor={item => item.place_id}
             renderItem={({ item }) => (
               <Pressable
                 onPress={() => selectPlace(item)}
                 style={styles.suggestionItem}
               >
-                <Text style={styles.suggestionText}>
-                  {item.description}
-                </Text>
+                <Text style={styles.suggestionText}>{item.description}</Text>
               </Pressable>
             )}
           />

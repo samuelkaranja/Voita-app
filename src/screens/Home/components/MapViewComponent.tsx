@@ -1,11 +1,17 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import { StyleSheet, View } from 'react-native';
 
 interface Props {
   location: any;
   places: any[];
   safeRouteCoords: any[];
   normalRouteCoords: any[];
+  destination?: {
+    latitude: number;
+    longitude: number;
+    text?: string;
+  };
 }
 
 export default function MapViewComponent({
@@ -13,28 +19,33 @@ export default function MapViewComponent({
   places,
   safeRouteCoords,
   normalRouteCoords,
+  destination,
 }: Props) {
   const mapRef = useRef<MapView | null>(null);
 
-  if (!location?.latitude || !location?.longitude) return null;
+  /* Safe Region */
+  const region = useMemo(() => {
+    return {
+      latitude: location?.latitude ?? 0,
+      longitude: location?.longitude ?? 0,
+      latitudeDelta: 0.005,
+      longitudeDelta: 0.005,
+    };
+  }, [location?.latitude, location?.longitude]);
 
-  const region = {
-    latitude: location.latitude,
-    longitude: location.longitude,
-    latitudeDelta: 0.005,
-    longitudeDelta: 0.005,
-  };
-
-  // =========================
-  // CAMERA FOLLOW USER
-  // =========================
+  /* Camera Follow User */
   useEffect(() => {
-    mapRef.current?.animateToRegion(region, 1000);
-  }, [location.latitude, location.longitude]);
+    if (!location?.latitude || !location?.longitude) return;
 
-  // =========================
-  // NORMALIZE SAFE ROUTE
-  // =========================
+    mapRef.current?.animateToRegion(region, 1000);
+  }, [location?.latitude, location?.longitude, region]);
+
+  /* Destination Validation */
+  const hasValidDestination =
+    typeof destination?.latitude === 'number' &&
+    typeof destination?.longitude === 'number';
+
+  /* Normalize Safe Route */
   const safeRoute = useMemo(() => {
     if (!Array.isArray(safeRouteCoords)) return [];
 
@@ -49,9 +60,7 @@ export default function MapViewComponent({
       .filter(Boolean);
   }, [safeRouteCoords]);
 
-  // =========================
-  // NORMALIZE NORMAL ROUTE
-  // =========================
+  /* Normalize Normal Route */
   const normalRoute = useMemo(() => {
     if (!Array.isArray(normalRouteCoords)) return [];
 
@@ -66,19 +75,15 @@ export default function MapViewComponent({
       .filter(Boolean);
   }, [normalRouteCoords]);
 
-  // =========================
-  // ACTIVE ROUTE
-  // =========================
-  const activeRoute = safeRoute.length > 0 ? safeRoute : normalRoute;
+  /* Active Route */
+  const routeToFit = safeRoute.length > 0 ? safeRoute : normalRoute;
 
-  // =========================
-  // 🔥 AUTO-ZOOM TO ROUTE (IMPORTANT UX FIX)
-  // =========================
+  /* Auto-Zoom To Route */
   useEffect(() => {
-    if (!activeRoute.length) return;
+    if (!routeToFit.length) return;
 
     const timeout = setTimeout(() => {
-      mapRef.current?.fitToCoordinates(activeRoute, {
+      mapRef.current?.fitToCoordinates(routeToFit, {
         edgePadding: {
           top: 120,
           right: 80,
@@ -87,10 +92,13 @@ export default function MapViewComponent({
         },
         animated: true,
       });
-    }, 500); // gives map time to render polyline
+    }, 500);
 
     return () => clearTimeout(timeout);
-  }, [activeRoute]);
+  }, [routeToFit, destination]);
+
+  /* Conditional Render (After Hooks) */
+  if (!location?.latitude || !location?.longitude) return null;
 
   return (
     <MapView
@@ -102,10 +110,31 @@ export default function MapViewComponent({
       showsMyLocationButton
       loadingEnabled
     >
-      {/* USER LOCATION */}
+      {/* User Location */}
       <Marker coordinate={region} title="You are here" />
 
-      {/* PLACES */}
+      {/* Destination Marker */}
+      {hasValidDestination && (
+        <Marker
+          coordinate={{
+            latitude: destination.latitude,
+            longitude: destination.longitude,
+          }}
+          title="Destination"
+          description={destination?.text || 'Your destination'}
+          key={`${destination.latitude}-${destination.longitude}`}
+        >
+          <View style={{ alignItems: 'center' }}>
+            {/* Outer glow */}
+            <View style={styles.outerglow}>
+              {/* Inner pin */}
+              <View style={styles.innerpin} />
+            </View>
+          </View>
+        </Marker>
+      )}
+
+      {/* Places */}
       {places.map((place: any, index: number) => {
         const latitude = place?.lat ?? place?.geometry?.location?.lat;
         const longitude = place?.lng ?? place?.geometry?.location?.lng;
@@ -122,14 +151,40 @@ export default function MapViewComponent({
         );
       })}
 
-      {/* ROUTE */}
-      {activeRoute.length > 0 && (
+      {/* Routes */}
+
+      {safeRoute.length > 0 ? (
         <Polyline
-          coordinates={activeRoute}
-          strokeWidth={4}
-          strokeColor="#0d2b1f"
+          coordinates={safeRoute}
+          strokeWidth={2}
+          strokeColor="#00C853"
         />
-      )}
+      ) : normalRoute.length > 0 ? (
+        <Polyline
+          coordinates={normalRoute}
+          strokeWidth={2}
+          strokeColor="#2979FF"
+        />
+      ) : null}
     </MapView>
   );
 }
+
+const styles = StyleSheet.create({
+  outerglow: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 61, 0, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  innerpin: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#FF3D00',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+});
