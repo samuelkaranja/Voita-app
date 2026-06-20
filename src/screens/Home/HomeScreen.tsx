@@ -9,7 +9,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Bell } from 'lucide-react-native';
 
 import TagSelector from './components/TagSelector';
@@ -21,6 +21,8 @@ import {
   fetchEmergency,
   fetchSafeRoute,
   fetchNormalRoute,
+  fetchFloodAlerts,
+  fetchCongestionAlerts,
   clearMapData,
 } from '../../redux/slices/map/mapsSlice';
 
@@ -50,6 +52,8 @@ export default function HomeScreen() {
     normalRouteCoords,
     normalRouteInfo,
     safeRouteInfo,
+    floodAlerts,
+    congestionAlerts,
   } = useSelector((state: any) => state.maps);
 
   const destination = useSelector((state: any) => state.maps.destination);
@@ -57,20 +61,28 @@ export default function HomeScreen() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [alertsExpanded, setAlertsExpanded] = useState(false);
 
-  const [alerts, setAlerts] = useState<Alert[]>([
-    {
-      id: 'flood',
-      type: 'flood',
-      title: 'Flood Alert: Westlands',
-      subtitle: 'Heavy rains near Sarit.',
-    },
-    {
-      id: 'congestion',
-      type: 'congestion',
-      title: 'Congestion: 12 min delay',
-      subtitle: 'Uhuru Highway traffic.',
-    },
-  ]);
+  // Flood and Congestion Alerts
+  const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([]);
+
+  const alerts = useMemo(() => {
+    const flood = floodAlerts.map((a: any) => ({
+      id: a.id,
+      type: 'flood' as const,
+      title: a.title,
+      subtitle: a.subtitle,
+    }));
+
+    const congestion = congestionAlerts.map((a: any) => ({
+      id: a.id,
+      type: 'congestion' as const,
+      title: a.title,
+      subtitle: a.subtitle,
+    }));
+
+    return [...flood, ...congestion].filter(
+      a => !dismissedAlerts.includes(a.id),
+    );
+  }, [floodAlerts, congestionAlerts, dismissedAlerts]);
 
   const isSafeRouteActive =
     selectedTag === 'Lady-Friendly' && safeRouteCoords.length > 0;
@@ -138,6 +150,16 @@ export default function HomeScreen() {
     );
   }, [destination, location, selectedTag, safeRouteCoords, dispatch]);
 
+  /* Fetch dynamic alerts on location change */
+  useEffect(() => {
+    if (!location?.coords) return;
+
+    const { latitude, longitude } = location.coords;
+
+    dispatch(fetchFloodAlerts({ lat: latitude, lng: longitude }));
+    dispatch(fetchCongestionAlerts({ lat: latitude, lng: longitude }));
+  }, [location?.coords?.latitude, location?.coords?.longitude, dispatch]);
+
   /* Tag Handler */
   const handleTagSelect = (tag: string) => {
     if (!location?.coords) return;
@@ -188,6 +210,7 @@ export default function HomeScreen() {
           origin_lng: longitude,
           destination_lat: destination.latitude,
           destination_lng: destination.longitude,
+          isNight,
         }),
       );
     }
@@ -195,22 +218,63 @@ export default function HomeScreen() {
 
   /* Dismiss Alert */
   const handleDismissAlert = (id: string) => {
-    setAlerts(prev => prev.filter(a => a.id !== id));
+    setDismissedAlerts(prev => [...prev, id]);
   };
 
   /* Safety List */
   const safetyItems = useMemo(() => {
     if (!safety) return [];
 
-    return [
-      safety.fewerIntersections && 'Fewer complex intersections',
-      safety.highActivityAreas && 'Passes through busy public areas',
-      safety.avoidsHighRiskZones && 'Avoids low-activity / risky zones',
-      safety.congestionAvoided && 'Reduces traffic exposure risk',
-    ].filter(Boolean);
+    const items: { icon: string; label: string; sub?: string }[] = [];
+
+    if (safety.fewerIntersections)
+      items.push({ icon: '🛣', label: 'Fewer complex intersections' });
+
+    if (safety.highActivityAreas)
+      items.push({ icon: '👥', label: 'Passes through busy public areas' });
+
+    if (safety.avoidsHighRiskZones)
+      items.push({ icon: '🚫', label: 'Avoids low-activity / risky zones' });
+
+    if (safety.congestionAvoided)
+      items.push({ icon: '🚦', label: 'Reduces traffic exposure risk' });
+
+    if (safety.litEstablishments > 0)
+      items.push({
+        icon: '💡',
+        label: 'Well-lit corridor',
+        sub: `${safety.litEstablishments} lit establishment${
+          safety.litEstablishments > 1 ? 's' : ''
+        } nearby`,
+      });
+
+    if (safety.openNowCount > 0)
+      items.push({
+        icon: '🏪',
+        label: 'Active area',
+        sub: `${safety.openNowCount} place${
+          safety.openNowCount > 1 ? 's' : ''
+        } currently open`,
+      });
+
+    if (safety.waypointName)
+      items.push({
+        icon: '📍',
+        label: 'Routed via safe anchor',
+        sub: safety.waypointName,
+      });
+
+    if (safety.nightMode)
+      items.push({
+        icon: '🌙',
+        label: 'Night scoring active',
+        sub: 'Lit establishments weighted higher',
+      });
+
+    return items;
   }, [safety]);
 
-  const snapPoints = useMemo(() => ['25%', '45%'], []);
+  const snapPoints = useMemo(() => ['30%', '65%', '90%'], []);
 
   return (
     <View style={styles.mainContainer}>
@@ -278,9 +342,9 @@ export default function HomeScreen() {
       {initialLocation && (
         <View style={[styles.bottomRight, { bottom: insets.bottom + 170 }]}>
           {/* Alerts panel — expands upward */}
-          {alertsExpanded && alerts.length > 0 && (
+          {alertsExpanded && (
             <View style={styles.alertsPanel}>
-              {/* Speed header inside panel */}
+              {/* Speed header */}
               <View style={styles.alertsPanelHeader}>
                 <Text style={styles.alertsPanelSpeed}>
                   {speed ? Math.round(speed * 3.6) : 0}
@@ -291,27 +355,32 @@ export default function HomeScreen() {
 
               <View style={styles.alertsDivider} />
 
-              {alerts.map(alert => (
-                <View key={alert.id} style={styles.alertRow}>
-                  <Text style={styles.alertIcon}>
-                    {alert.type === 'flood' ? '🌧' : '🚧'}
-                  </Text>
-                  <View style={styles.alertText}>
-                    <Text style={styles.alertTitle}>{alert.title}</Text>
-                    <Text style={styles.alertSubtitle}>{alert.subtitle}</Text>
+              {/* Alerts list or empty state */}
+              {alerts.length === 0 ? (
+                <Text style={styles.alertsEmpty}>No alerts in your area</Text>
+              ) : (
+                alerts.map(alert => (
+                  <View key={alert.id} style={styles.alertRow}>
+                    <Text style={styles.alertIcon}>
+                      {alert.type === 'flood' ? '🌧' : '🚧'}
+                    </Text>
+                    <View style={styles.alertText}>
+                      <Text style={styles.alertTitle}>{alert.title}</Text>
+                      <Text style={styles.alertSubtitle}>{alert.subtitle}</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => handleDismissAlert(alert.id)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Text style={styles.alertClose}>✕</Text>
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => handleDismissAlert(alert.id)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Text style={styles.alertClose}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
+                ))
+              )}
             </View>
           )}
 
-          {/* Bell button only — no SpeedWidget beside it */}
+          {/* Bell button with badge */}
           <TouchableOpacity
             style={styles.bellButton}
             onPress={() => setAlertsExpanded(prev => !prev)}
@@ -338,19 +407,55 @@ export default function HomeScreen() {
         enablePanDownToClose
         backgroundStyle={{ backgroundColor: '#fff' }}
       >
-        <BottomSheetView style={styles.sheetContent}>
-          <Text style={styles.sheetTitle}>Why this route is safer:</Text>
+        <BottomSheetScrollView
+          contentContainerStyle={styles.sheetContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header row */}
+          <View style={styles.sheetHeader}>
+            <Text style={styles.sheetTitle}>Why this route is safer</Text>
+            {safety?.nightMode && (
+              <View style={styles.sheetNightBadge}>
+                <Text style={styles.sheetNightBadgeText}>🌙 Night mode</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Detour pill */}
+          {safety?.detourRatio != null && safety.detourRatio > 1 && (
+            <View style={styles.detourPill}>
+              <Text style={styles.detourPillText}>
+                {Math.round((safety.detourRatio - 1) * 100)}% longer than direct
+                — worth it for safety
+              </Text>
+            </View>
+          )}
+
+          {/* Divider */}
+          <View style={styles.sheetDivider} />
 
           {safetyItems.length === 0 ? (
             <Text style={styles.sheetEmpty}>No safety data available</Text>
           ) : (
             safetyItems.map((item, index) => (
-              <Text key={index} style={styles.sheetItem}>
-                • {item}
-              </Text>
+              <View
+                key={index}
+                style={[
+                  styles.sheetRow,
+                  index === safetyItems.length - 1 && { borderBottomWidth: 0 },
+                ]}
+              >
+                <View style={styles.sheetIconWrap}>
+                  <Text style={styles.sheetIcon}>{item.icon}</Text>
+                </View>
+                <View style={styles.sheetRowText}>
+                  <Text style={styles.sheetItem}>{item.label}</Text>
+                  {item.sub && <Text style={styles.sheetSub}>{item.sub}</Text>}
+                </View>
+              </View>
             ))
           )}
-        </BottomSheetView>
+        </BottomSheetScrollView>
       </BottomSheet>
     </View>
   );
@@ -448,8 +553,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   alertsPanelSpeed: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 25,
+    fontWeight: '800',
     color: '#0d2b1f',
   },
   alertsPanelSpeedUnit: {
@@ -475,6 +580,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     marginBottom: 4,
   },
+  bellBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#e53935',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bellBadgeText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  alertsEmpty: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
+    paddingVertical: 10,
+  },
 
   /* Bell */
   bellButton: {
@@ -485,82 +612,175 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  bellBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#e53935',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  bellBadgeText: {
-    color: '#fff',
-    fontSize: 9,
-    fontWeight: '700',
-  },
-
   /* Alerts panel */
   alertsPanel: {
     marginBottom: 10,
-    width: 220,
+    width: 270,
     backgroundColor: '#fff',
     borderRadius: 14,
-    padding: 10,
+    padding: 12,
     elevation: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.12,
     shadowRadius: 6,
   },
+  alertsPanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  alertsPanelSpeed: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#0d2b1f',
+  },
+  alertsPanelSpeedUnit: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#8ff6d0',
+    backgroundColor: 'rgba(13, 43, 31, 0.92)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  alertsPanelTitle: {
+    flex: 1,
+    textAlign: 'right',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#888',
+    letterSpacing: 0.5,
+  },
+  alertsDivider: {
+    height: 0.5,
+    backgroundColor: '#f0f0f0',
+    marginBottom: 6,
+  },
   alertRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderBottomWidth: 0.5,
     borderBottomColor: '#f0f0f0',
     gap: 10,
   },
   alertIcon: {
-    fontSize: 18,
+    fontSize: 20,
   },
   alertText: {
     flex: 1,
   },
   alertTitle: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
     color: '#001810',
-    marginBottom: 2,
+    marginBottom: 3,
   },
   alertSubtitle: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#555',
+    lineHeight: 16,
   },
   alertClose: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#999',
     paddingHorizontal: 4,
+  },
+  alertsEmpty: {
+    fontSize: 13,
+    color: '#999',
+    textAlign: 'center',
+    paddingVertical: 12,
   },
 
   /* Bottom sheet */
   sheetContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 4,
+    marginBottom: 10,
   },
   sheetTitle: {
     fontSize: 16,
     fontWeight: '700',
-    marginBottom: 10,
+    color: '#0d2b1f',
+  },
+  sheetNightBadge: {
+    backgroundColor: '#1a1a2e',
+    borderRadius: 12,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+  },
+  sheetNightBadgeText: {
+    fontSize: 11,
+    color: '#8ec3b9',
+    fontWeight: '600',
+  },
+  detourPill: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#E8F5E9',
+    borderRadius: 20,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    marginBottom: 12,
+  },
+  detourPillText: {
+    fontSize: 11,
+    color: '#1B5E20',
+    fontWeight: '600',
+  },
+  sheetDivider: {
+    height: 0.5,
+    backgroundColor: '#e0e0e0',
+    marginBottom: 4,
+  },
+  sheetRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#f0f0f0',
+    gap: 12,
+  },
+  sheetIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#f4f4f4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetIcon: {
+    fontSize: 16,
+  },
+  sheetRowText: {
+    flex: 1,
+    justifyContent: 'center',
   },
   sheetItem: {
     fontSize: 13,
-    marginTop: 6,
-    color: '#333333',
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  sheetSub: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 3,
+    lineHeight: 16,
   },
   sheetEmpty: {
     fontSize: 13,
     color: '#999',
+    marginTop: 16,
+    textAlign: 'center',
   },
 });

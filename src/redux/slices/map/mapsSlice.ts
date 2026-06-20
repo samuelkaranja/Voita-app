@@ -39,158 +39,292 @@ export const fetchSafeRoute = createAsyncThunk(
     origin_lng,
     destination_lat,
     destination_lng,
+    isNight = false,
   }: {
     origin_lat: number;
     origin_lng: number;
     destination_lat: number;
     destination_lng: number;
+    isNight?: boolean;
   }) => {
     const GOOGLE_KEY = 'AIzaSyDAaZnQ6p4Zase38K03Rk8LbCyGlfmaUCg';
 
-    const res = await fetch(
-      `https://maps.googleapis.com/maps/api/directions/json?origin=${origin_lat},${origin_lng}&destination=${destination_lat},${destination_lng}&alternatives=true&avoid=highways&key=${GOOGLE_KEY}`,
-    );
-
-    const data = await res.json();
-
-    console.log('🛡 SAFE ROUTES:', data);
-
-    if (!data.routes || data.routes.length === 0) {
-      return [];
-    }
-
-    /* ............. HELPER: Decode polyline ........... */
+    /* ─── helpers ─── */
 
     const decodePolyline = (t: string) => {
-      let points = [];
+      const points: { latitude: number; longitude: number }[] = [];
       let index = 0,
         lat = 0,
         lng = 0;
-
       while (index < t.length) {
         let b,
           shift = 0,
           result = 0;
-
         do {
           b = t.charCodeAt(index++) - 63;
           result |= (b & 0x1f) << shift;
           shift += 5;
         } while (b >= 0x20);
-
-        const dlat = result & 1 ? ~(result >> 1) : result >> 1;
-        lat += dlat;
-
+        lat += result & 1 ? ~(result >> 1) : result >> 1;
         shift = 0;
         result = 0;
-
         do {
           b = t.charCodeAt(index++) - 63;
           result |= (b & 0x1f) << shift;
           shift += 5;
         } while (b >= 0x20);
-
-        const dlng = result & 1 ? ~(result >> 1) : result >> 1;
-        lng += dlng;
-
-        points.push({
-          latitude: lat / 1e5,
-          longitude: lng / 1e5,
-        });
+        lng += result & 1 ? ~(result >> 1) : result >> 1;
+        points.push({ latitude: lat / 1e5, longitude: lng / 1e5 });
       }
-
       return points;
     };
 
-    /* .......... HELPER: Base scoring ......... */
+    // Midpoint of a route's steps — used to sample conditions along the route
+    const getMidpoint = (route: any) => {
+      const steps = route.legs[0].steps;
+      if (!steps?.length) return null;
+      return steps[Math.floor(steps.length / 2)].start_location as {
+        lat: number;
+        lng: number;
+      };
+    };
 
-    const scoreRoute = (route: any) => {
+    /* ─── Step 1: Find a busy anchor waypoint near the route midpoint ─── */
+
+    // We estimate the rough midpoint between origin and destination first
+    const roughMidLat = (origin_lat + destination_lat) / 2;
+    const roughMidLng = (origin_lng + destination_lng) / 2;
+
+    // Place types that signal a busy, well-lit, public environment
+    const SAFE_ANCHOR_TYPES =
+      'shopping_mall|supermarket|hospital|train_station|bus_station';
+
+    let waypointParam = '';
+    let waypointName = '';
+
+    try {
+      const anchorRes = await fetch(
+        `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
+          `?location=${roughMidLat},${roughMidLng}` +
+          `&radius=3000` +
+          `&type=${SAFE_ANCHOR_TYPES}` +
+          `&rankby=prominence` +
+          `&key=${GOOGLE_KEY}`,
+      );
+      const anchorData = await anchorRes.json();
+      const anchor = anchorData.results?.[0];
+
+      if (anchor?.geometry?.location) {
+        const { lat, lng } = anchor.geometry.location;
+        waypointParam = `&waypoints=via:${lat},${lng}`;
+        waypointName = anchor.name;
+        console.log('🏢 Safe anchor waypoint:', waypointName, lat, lng);
+      }
+    } catch (err) {
+      console.warn('Anchor waypoint fetch failed, proceeding without:', err);
+    }
+
+    /* ─── Step 2: Fetch route(s) via the anchor ─── */
+
+    const directionsRes = await fetch(
+      `https://maps.googleapis.com/maps/api/directions/json` +
+        `?origin=${origin_lat},${origin_lng}` +
+        `&destination=${destination_lat},${destination_lng}` +
+        `&alternatives=true` +
+        `&avoid=highways|ferries` + // highways & ferries are isolated corridors
+        `${waypointParam}` +
+        `&key=${GOOGLE_KEY}`,
+    );
+
+    const directionsData = await directionsRes.json();
+    console.log('🛡 SAFE ROUTE directions:', directionsData);
+
+    if (!directionsData.routes?.length) return [];
+
+    /* ─── Step 3: Straight-line distance for detour tolerance ─── */
+
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const haversineKm = (
+      a: { lat: number; lng: number },
+      b: { lat: number; lng: number },
+    ) => {
+      const R = 6371;
+      const dLat = toRad(b.lat - a.lat);
+      const dLng = toRad(b.lng - a.lng);
+      const h =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(a.lat)) *
+          Math.cos(toRad(b.lat)) *
+          Math.sin(dLng / 2) ** 2;
+      return R * 2 * Math.asin(Math.sqrt(h));
+    };
+
+    const straightLineKm = haversineKm(
+      { lat: origin_lat, lng: origin_lng },
+      { lat: destination_lat, lng: destination_lng },
+    );
+
+    /* ─── Step 4: Score each candidate ─── */
+
+    // Lit establishment types — these are open after dark and indicate activity
+    const LIT_TYPES = [
+      'pharmacy',
+      'bank',
+      'atm',
+      'convenience_store',
+      'hospital',
+      'police',
+    ];
+
+    const scoreRoute = async (
+      route: any,
+    ): Promise<{ score: number; insights: Record<string, any> }> => {
       const leg = route.legs[0];
+      const routeDistanceKm = leg.distance.value / 1000;
 
-      const duration = leg.duration.value; // seconds
-      const steps = leg.steps.length;
+      // ── Detour tolerance: reject routes >40% longer than straight-line ──
+      const detourRatio = routeDistanceKm / Math.max(straightLineKm, 0.1);
+      if (detourRatio > 1.4) {
+        console.log(
+          `⛔ Route rejected — detour ratio: ${detourRatio.toFixed(2)}`,
+        );
+        return { score: -Infinity, insights: {} };
+      }
 
       let score = 100;
+      const insights: Record<string, any> = {
+        detourRatio: +detourRatio.toFixed(2),
+        waypointName: waypointName || null,
+      };
 
-      // Penalize complexity
-      score -= steps * 2;
+      // Sample 3 points along the route: quarter, mid, three-quarter
+      const steps = leg.steps;
+      const sampleIndices = [
+        Math.floor(steps.length * 0.25),
+        Math.floor(steps.length * 0.5),
+        Math.floor(steps.length * 0.75),
+      ];
+      const samplePoints: { lat: number; lng: number }[] = sampleIndices
+        .map(i => steps[i]?.start_location)
+        .filter(Boolean);
 
-      // Penalize long routes
-      score -= duration / 60;
-
-      return score;
-    };
-
-    /* ........ HELPER: Midpoint ........ */
-
-    const getMidPoint = (route: any) => {
-      const steps = route.legs[0].steps;
-      if (!steps || steps.length === 0) return null;
-
-      return steps[Math.floor(steps.length / 2)].start_location;
-    };
-
-    /* ........ HELPER: Nearby places ........ */
-
-    const fetchNearbyScore = async (lat: number, lng: number) => {
-      try {
-        const res = await fetch(
-          `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=500&type=restaurant&key=${GOOGLE_KEY}`,
-        );
-
-        const data = await res.json();
-
-        return data.results?.length || 0;
-      } catch (err) {
-        console.log('Places API error:', err);
-        return 0;
+      // ── Signal A: Lit establishments density ──
+      // Boosts routes through always-lit areas (pharmacy, bank, police)
+      let totalLitCount = 0;
+      for (const point of samplePoints) {
+        try {
+          const litRes = await fetch(
+            `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
+              `?location=${point.lat},${point.lng}` +
+              `&radius=300` +
+              `&type=${LIT_TYPES.join('|')}` +
+              `&key=${GOOGLE_KEY}`,
+          );
+          const litData = await litRes.json();
+          totalLitCount += litData.results?.length ?? 0;
+        } catch {
+          /* non-critical */
+        }
       }
-    };
 
-    /* ........ SELECT BEST ROUTE ........ */
+      // Night mode doubles the value of lit establishments
+      const litWeight = isNight ? 10 : 5;
+      score += totalLitCount * litWeight;
+      insights.litEstablishments = totalLitCount;
+      console.log(
+        `💡 Lit count: ${totalLitCount} (night=${isNight}, weight=${litWeight})`,
+      );
 
-    let bestRoute = data.routes[0];
-    let bestScore = -Infinity;
-
-    for (const route of data.routes) {
-      let score = scoreRoute(route);
-
-      const midpoint = getMidPoint(route);
-
+      // ── Signal B: Open-now activity at travel time ──
+      // Counts places currently open — active areas are safer
+      let openNowCount = 0;
+      const midpoint = getMidpoint(route);
       if (midpoint) {
-        const nearbyCount = await fetchNearbyScore(midpoint.lat, midpoint.lng);
+        try {
+          const openRes = await fetch(
+            `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
+              `?location=${midpoint.lat},${midpoint.lng}` +
+              `&radius=500` +
+              `&type=restaurant|cafe|bar|supermarket` +
+              `&opennow=true` +
+              `&key=${GOOGLE_KEY}`,
+          );
+          const openData = await openRes.json();
+          openNowCount = openData.results?.length ?? 0;
+        } catch {
+          /* non-critical */
+        }
+      }
+      score += openNowCount * 3;
+      insights.openNowCount = openNowCount;
+      console.log(`🕐 Open-now count: ${openNowCount}`);
 
-        console.log('📍 Nearby places:', nearbyCount);
-
-        // Boost score with human activity
-        score += nearbyCount * 5;
+      // ── Signal C: Waypoint proximity bonus ──
+      // Reward routes that pass close to the anchor waypoint we injected
+      if (waypointParam && midpoint) {
+        // Already forced via waypoint — give a flat bonus to reward compliance
+        score += 20;
+        insights.waypointBonus = true;
       }
 
-      console.log('🛣 Route score:', score);
+      // ── Signal D: Penalise routes with very few steps (likely isolated road) ──
+      // Complex urban routes have many steps; isolated roads have few
+      if (steps.length < 5) {
+        score -= 30;
+        insights.lowStepPenalty = true;
+      }
 
+      insights.finalScore = Math.round(score);
+      return { score, insights };
+    };
+
+    /* ─── Step 5: Pick the winner ─── */
+
+    let bestRoute = directionsData.routes[0];
+    let bestScore = -Infinity;
+    let bestInsights: Record<string, any> = {};
+
+    for (const route of directionsData.routes) {
+      const { score, insights } = await scoreRoute(route);
+      console.log('🛣 Candidate score:', score, insights);
       if (score > bestScore) {
         bestScore = score;
         bestRoute = route;
+        bestInsights = insights;
       }
     }
 
-    console.log('🏆 BEST SAFE ROUTE SCORE:', bestScore);
+    // If everything was rejected by detour filter, fall back to first route
+    if (bestScore === -Infinity) {
+      console.warn(
+        'All routes rejected by detour filter, using first route as fallback',
+      );
+      bestRoute = directionsData.routes[0];
+      bestInsights = { fallback: true };
+    }
 
-    const encoded = bestRoute.overview_polyline.points;
+    console.log('🏆 Best safe route score:', bestScore, bestInsights);
 
     const leg = bestRoute.legs[0];
+    const coords = decodePolyline(bestRoute.overview_polyline.points);
 
     const safetyInsights = {
-      fewerIntersections: true,
-      highActivityAreas: true,
-      avoidsHighRiskZones: true,
+      fewerIntersections: (bestRoute.legs[0].steps?.length ?? 0) >= 5,
+      highActivityAreas: (bestInsights.openNowCount ?? 0) > 2,
+      avoidsHighRiskZones: !bestInsights.lowStepPenalty,
       congestionAvoided: true,
+      // Extended insights for richer UI
+      litEstablishments: bestInsights.litEstablishments ?? 0,
+      openNowCount: bestInsights.openNowCount ?? 0,
+      waypointName: bestInsights.waypointName ?? null,
+      nightMode: isNight,
+      detourRatio: bestInsights.detourRatio ?? null,
     };
 
     return {
-      coords: decodePolyline(encoded),
-      distance: leg.distance?.text || null,
-      duration: leg.duration?.text || null,
+      coords,
+      distance: leg.distance?.text ?? null,
+      duration: leg.duration?.text ?? null,
       safetyInsights,
     };
   },
@@ -286,6 +420,67 @@ export const fetchNormalRoute = createAsyncThunk(
   },
 );
 
+/* ........... FLOOD ALERTS ............ */
+
+export const fetchFloodAlerts = createAsyncThunk(
+  'maps/fetchFloodAlerts',
+  async ({ lat, lng }: { lat: number; lng: number }) => {
+    const res = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&hourly=precipitation&forecast_days=1`,
+    );
+
+    const data = await res.json();
+    const precipitation: number[] = data.hourly?.precipitation || [];
+    const maxRain = Math.max(...precipitation);
+
+    if (maxRain > 10) {
+      return [
+        {
+          id: 'flood-live',
+          title: 'Flood Risk: Heavy Rain',
+          subtitle: `Up to ${maxRain.toFixed(1)}mm expected near you.`,
+        },
+      ];
+    }
+
+    return [];
+  },
+);
+
+/* ........... CONGESTION ALERTS ............ */
+
+export const fetchCongestionAlerts = createAsyncThunk(
+  'maps/fetchCongestionAlerts',
+  async ({ lat, lng }: { lat: number; lng: number }) => {
+    const GOOGLE_KEY = 'AIzaSyDAaZnQ6p4Zase38K03Rk8LbCyGlfmaUCg';
+
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/directions/json?origin=${lat},${lng}&destination=${lat},${lng}&departure_time=now&key=${GOOGLE_KEY}`,
+    );
+
+    const data = await res.json();
+    const leg = data.routes?.[0]?.legs?.[0];
+
+    if (!leg) return [];
+
+    const normalDuration = leg.duration?.value || 0;
+    const trafficDuration = leg.duration_in_traffic?.value || 0;
+    const delayMinutes = Math.round((trafficDuration - normalDuration) / 60);
+
+    if (delayMinutes > 5) {
+      return [
+        {
+          id: 'congestion-live',
+          title: `Congestion: ${delayMinutes} min delay`,
+          subtitle: 'Based on current traffic near you.',
+        },
+      ];
+    }
+
+    return [];
+  },
+);
+
 /* ........ SLICE ........ */
 
 const mapsSlice = createSlice({
@@ -318,8 +513,16 @@ const mapsSlice = createSlice({
         highActivityAreas: boolean;
         avoidsHighRiskZones: boolean;
         congestionAvoided: boolean;
+        litEstablishments: number;
+        openNowCount: number;
+        waypointName: string | null;
+        nightMode: boolean;
+        detourRatio: number | null;
       },
     },
+
+    floodAlerts: [] as { id: string; title: string; subtitle: string }[],
+    congestionAlerts: [] as { id: string; title: string; subtitle: string }[],
 
     loading: false,
     error: null as string | null,
@@ -398,6 +601,18 @@ const mapsSlice = createSlice({
           duration: action.payload.duration,
         };
         state.places = [];
+      })
+
+      /* ........ FLOOD ALERTS ........ */
+
+      .addCase(fetchFloodAlerts.fulfilled, (state, action) => {
+        state.floodAlerts = action.payload;
+      })
+
+      /* ........ CONGESTION ALERTS ........ */
+
+      .addCase(fetchCongestionAlerts.fulfilled, (state, action) => {
+        state.congestionAlerts = action.payload;
       })
 
       /* ........ ERROR HANDLING ........*/

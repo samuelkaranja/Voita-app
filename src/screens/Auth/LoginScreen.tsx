@@ -31,46 +31,46 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [secure, setSecure] = useState(true);
 
-const handleLogin = async () => {
-  const res = await dispatch(loginUser({ phone, password }));
+  const handleLogin = async () => {
+    const res = await dispatch(loginUser({ phone, password }));
 
-  if (res.meta.requestStatus === 'fulfilled') {
-    const user = res.payload.user;
+    if (res.meta.requestStatus === 'fulfilled') {
+      const user = res.payload.user;
 
-    // 🔥 IMPORTANT: sync Redux userSlice
-    dispatch(setUser(user));
+      // 🔥 IMPORTANT: sync Redux userSlice
+      dispatch(setUser(user));
 
-    Toast.show({
-      type: 'success',
-      text1: 'Login Successful',
-      text2: 'Welcome 👋',
-    });
-
-    // optional: navigate after sync
-    navigation.replace('Home');
-  } else {
-    const error = res.payload;
-
-    if (error?.includes('not verified')) {
       Toast.show({
-        type: 'info',
-        text1: 'Verification Required',
-        text2: 'Please verify your phone number first',
+        type: 'success',
+        text1: 'Login Successful',
+        text2: 'Welcome 👋',
       });
 
-      await dispatch(sendOtp(phone));
-
-      navigation.navigate('OTP');
+      // optional: navigate after sync
+      navigation.replace('Home');
     } else {
-      Toast.show({
-        type: 'error',
-        text1: 'Login Failed',
-        text2: error || 'Something went wrong',
-      });
-      console.log(error)
+      const error = res.payload;
+
+      if (error?.includes('not verified')) {
+        Toast.show({
+          type: 'info',
+          text1: 'Verification Required',
+          text2: 'Please verify your phone number first',
+        });
+
+        await dispatch(sendOtp(phone));
+
+        navigation.navigate('OTP');
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Login Failed',
+          text2: error || 'Something went wrong',
+        });
+        console.log(error);
+      }
     }
-  }
-};
+  };
 
   return (
     <SafeAreaView style={styles.container}>

@@ -6,23 +6,22 @@ const getSunTimes = (latitude: number, longitude: number) => {
     (now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000,
   );
 
-  // Solar declination
-  const declination = 23.45 * Math.sin(((360 / 365) * (dayOfYear - 81) * Math.PI) / 180);
+  const declination =
+    23.45 * Math.sin(((360 / 365) * (dayOfYear - 81) * Math.PI) / 180);
 
-  // Hour angle for sunrise/sunset
   const latRad = (latitude * Math.PI) / 180;
   const declRad = (declination * Math.PI) / 180;
   const hourAngle =
     (Math.acos(-Math.tan(latRad) * Math.tan(declRad)) * 180) / Math.PI;
 
-  // UTC offset from longitude
-  const longitudeOffset = longitude / 15;
+  // Solar noon in UTC
+  const solarNoonUTC = 12 - longitude / 15;
 
-  // Sunrise and sunset in local hours
-  const sunriseHour = 12 - hourAngle / 15 + longitudeOffset;
-  const sunsetHour  = 12 + hourAngle / 15 + longitudeOffset;
+  // Sunrise/sunset in UTC hours
+  const sunriseUTC = solarNoonUTC - hourAngle / 15;
+  const sunsetUTC  = solarNoonUTC + hourAngle / 15;
 
-  return { sunriseHour, sunsetHour };
+  return { sunriseUTC, sunsetUTC };
 };
 
 export const useDayNight = (latitude?: number, longitude?: number) => {
@@ -32,16 +31,14 @@ export const useDayNight = (latitude?: number, longitude?: number) => {
     if (latitude == null || longitude == null) return;
 
     const check = () => {
-      const { sunriseHour, sunsetHour } = getSunTimes(latitude, longitude);
+      const { sunriseUTC, sunsetUTC } = getSunTimes(latitude, longitude);
       const now = new Date();
-      const currentHour = now.getHours() + now.getMinutes() / 60;
-
-      setIsNight(currentHour < sunriseHour || currentHour > sunsetHour);
+      // Compare in UTC to match the solar calculation
+      const currentUTC = now.getUTCHours() + now.getUTCMinutes() / 60;
+      setIsNight(currentUTC < sunriseUTC || currentUTC > sunsetUTC);
     };
 
-    check(); // Run immediately
-
-    // Re-check every minute
+    check();
     const interval = setInterval(check, 60 * 1000);
     return () => clearInterval(interval);
   }, [latitude, longitude]);

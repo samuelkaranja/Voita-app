@@ -2,7 +2,7 @@ export const generatePath = (
   width: number,
   height: number,
   tabWidth: number,
-  index: number
+  index: number,
 ) => {
   const center = tabWidth * index + tabWidth / 2;
 

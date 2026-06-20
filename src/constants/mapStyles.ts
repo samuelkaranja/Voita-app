@@ -36,7 +36,7 @@ export const NIGHT_MAP_STYLE = [
   {
     featureType: 'road',
     elementType: 'labels.text.fill',
-    stylers: [{ color: '#d0dbe8' }],  // bright so road names are readable
+    stylers: [{ color: '#d0dbe8' }], // bright so road names are readable
   },
   {
     featureType: 'road',
@@ -122,7 +122,7 @@ export const NIGHT_MAP_STYLE = [
   {
     featureType: 'administrative.locality',
     elementType: 'labels.text.fill',
-    stylers: [{ color: '#ffffff' }],  // city/town names bright white
+    stylers: [{ color: '#ffffff' }], // city/town names bright white
   },
 
   // ........ Transit ........
