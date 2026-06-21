@@ -14,15 +14,24 @@ import CommunityScreen from '../screens/Community/CommunityScreen';
 import InsuranceScreen from '../screens/Insurance/InsuranceScreen';
 import ClaimsScreen from '../screens/Claims/ClaimsScreen';
 import ProfileStack from './ProfileStack';
+import ServicesStack from './ServicesStack';
 
 const Tab = createBottomTabNavigator();
 
 export default function AppTabs() {
   return (
-    <Tab.Navigator
-      tabBar={(props) => <CustomTabBar {...props} />}
-    >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+    <Tab.Navigator tabBar={props => <CustomTabBar {...props} />}>
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ headerShown: false }}
+      />
+
+      <Tab.Screen
+        name="Services"
+        component={ServicesStack}
+        options={{ headerShown: false }}
+      />
 
       <Tab.Screen
         name="Marketplace"
@@ -48,7 +57,11 @@ export default function AppTabs() {
         options={{ header: () => <ClaimsHeader /> }}
       />
 
-      <Tab.Screen name="Profile" component={ProfileStack} options={{ headerShown: false }} />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileStack}
+        options={{ headerShown: false }}
+      />
     </Tab.Navigator>
   );
 }

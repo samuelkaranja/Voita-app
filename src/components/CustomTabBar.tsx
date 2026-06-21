@@ -14,6 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import {
   Home,
+  Wrench,
   ShoppingCart,
   Users,
   ShieldCheck,
@@ -27,6 +28,7 @@ const { width } = Dimensions.get('window');
 
 const icons: any = {
   Home: Home,
+  Services: Wrench,
   Marketplace: ShoppingCart,
   Community: Users,
   Insurance: ShieldCheck,
