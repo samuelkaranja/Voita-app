@@ -39,16 +39,14 @@ const initialState: AuthState = {
   },
 };
 
-
 // ✅ MAPPER FUNCTION (KEY FIX)
 const mapDriverToUser = (driver: any): User => ({
-  firstName: driver?.first_name ?? "",
-  lastName: driver?.last_name ?? "",
-  email: driver?.email ?? "",
-  phone: driver?.phone ?? "",
+  firstName: driver?.first_name ?? '',
+  lastName: driver?.last_name ?? '',
+  email: driver?.email ?? '',
+  phone: driver?.phone ?? '',
   profileImageUrl: driver?.profile_image_url ?? null,
 });
-
 
 // 🔄 LOAD STORED AUTH
 export const loadStoredAuth = createAsyncThunk(
@@ -73,13 +71,12 @@ export const loadStoredAuth = createAsyncThunk(
   },
 );
 
-
 // 📝 REGISTER
 export const registerUser = createAsyncThunk(
   'auth/register',
   async (data: any, { rejectWithValue }) => {
     try {
-      const res = await axios.post(`${BASE_URL}/register`, {
+      const res = await axios.post(`${BASE_URL}/api/v1/auth/register`, {
         first_name: data.firstName,
         last_name: data.lastName,
         email: data.email,
@@ -96,13 +93,12 @@ export const registerUser = createAsyncThunk(
   },
 );
 
-
 // 📲 SEND OTP
 export const sendOtp = createAsyncThunk(
   'auth/sendOtp',
   async (phone: string, { rejectWithValue }) => {
     try {
-      const res = await axios.post(`${BASE_URL}/send-otp`, {
+      const res = await axios.post(`${BASE_URL}/api/v1/auth/send-otp`, {
         phone,
         purpose: 'phone_verification',
       });
@@ -116,7 +112,6 @@ export const sendOtp = createAsyncThunk(
   },
 );
 
-
 // ✅ VERIFY OTP
 export const verifyOtp = createAsyncThunk(
   'auth/verifyOtp',
@@ -125,7 +120,7 @@ export const verifyOtp = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const res = await axios.post(`${BASE_URL}/verify-otp`, {
+      const res = await axios.post(`${BASE_URL}/api/v1/auth/verify-otp`, {
         phone,
         otp_code: otp,
         purpose: 'phone_verification',
@@ -138,13 +133,12 @@ export const verifyOtp = createAsyncThunk(
   },
 );
 
-
 // 🔐 LOGIN
 export const loginUser = createAsyncThunk(
   'auth/login',
   async ({ phone, password }: any, { rejectWithValue }) => {
     try {
-      const res = await axios.post(`${BASE_URL}/login`, {
+      const res = await axios.post(`${BASE_URL}/api/v1/auth/login`, {
         phone,
         password,
       });
@@ -155,7 +149,6 @@ export const loginUser = createAsyncThunk(
     }
   },
 );
-
 
 const authSlice = createSlice({
   name: 'auth',
@@ -186,7 +179,6 @@ const authSlice = createSlice({
         state.loading.init = false;
       })
 
-
       // 📝 REGISTER
       .addCase(registerUser.pending, state => {
         state.loading.register = true;
@@ -201,7 +193,6 @@ const authSlice = createSlice({
         state.error = action.payload as string;
       })
 
-
       // 📲 SEND OTP
       .addCase(sendOtp.pending, state => {
         state.loading.sendOtp = true;
@@ -213,7 +204,6 @@ const authSlice = createSlice({
         state.loading.sendOtp = false;
       })
 
-
       // ✅ VERIFY OTP
       .addCase(verifyOtp.pending, state => {
         state.loading.verifyOtp = true;
@@ -224,7 +214,6 @@ const authSlice = createSlice({
       .addCase(verifyOtp.rejected, state => {
         state.loading.verifyOtp = false;
       })
-
 
       // 🔐 LOGIN (🔥 FIXED)
       .addCase(loginUser.pending, state => {
