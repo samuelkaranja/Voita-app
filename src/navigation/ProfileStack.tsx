@@ -4,17 +4,16 @@ import { ProfileScreen } from '../screens/Profile/ProfileScreen';
 import EditProfileScreen from '../screens/EditProfile/EditProfileScreen';
 import { EditPersonalDetailsScreen } from '../screens/Profile/EditPersonalDetailsScreen';
 import { EditVehicleDetailsScreen } from '../screens/Profile/EditVehicleDetailsScreen';
-import {AddVehicleScreen} from '../screens/Profile/AddVehicleScreen';
+import { AddVehicleScreen } from '../screens/Profile/AddVehicleScreen';
 
 import ProfileHeader from '../components/ProfileHeader';
-
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;
   EditProfile: undefined;
   EditPersonalDetails: undefined;
-  EditVehicleDetails: undefined;
-  AddVehicle: undefined; 
+  EditVehicleDetails: { vehicleId: string };
+  AddVehicle: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -37,17 +36,17 @@ export default function ProfileStack() {
         component={EditPersonalDetailsScreen}
         options={{ headerShown: false }}
       />
-      
+
       <Stack.Screen
         name="EditVehicleDetails"
         component={EditVehicleDetailsScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
-  name="AddVehicle"
-  component={AddVehicleScreen}
-  options={{ headerShown: false }}
-/>
+        name="AddVehicle"
+        component={AddVehicleScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }

@@ -17,7 +17,7 @@ interface Props {
   label: string;
   date: Date;
   onDateChange: (date: Date) => void;
-  actionLabel: string;
+  actionLabel?: string;
   actionVariant?: ActionVariant;
   onActionPress?: () => void;
   isAlert?: boolean;
@@ -25,7 +25,7 @@ interface Props {
 
 const ACTION_COLORS: Record<ActionVariant, string> = {
   renew: '#16A34A',
-  book: '#DC2626',
+  book: '#16A34A',
   schedule: '#16A34A',
 };
 
@@ -57,7 +57,7 @@ export const MaintenanceDateCard: React.FC<Props> = ({
 
   return (
     <View style={[styles.card, isAlert && styles.cardAlert]}>
-      {/* Icon + label */}
+      {/* Icon + label on the same row */}
       <View style={styles.iconBlock}>
         <View style={[styles.iconWrapper, isAlert && styles.iconWrapperAlert]}>
           {icon}
@@ -67,7 +67,7 @@ export const MaintenanceDateCard: React.FC<Props> = ({
         </Text>
       </View>
 
-      {/* Date row */}
+      {/* Date field below */}
       <View style={styles.dateRow}>
         <TouchableOpacity
           style={[styles.dateField, isAlert && styles.dateFieldAlert]}
@@ -77,18 +77,10 @@ export const MaintenanceDateCard: React.FC<Props> = ({
           <Text style={[styles.dateText, isAlert && styles.dateTextAlert]}>
             {formattedDate}
           </Text>
-          {/* Calendar icon rendered via unicode — keeps it dependency-free */}
           <Text style={styles.calendarIcon}>📅</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={onActionPress} activeOpacity={0.7}>
-          <Text style={[styles.actionText, { color: actionColor }]}>
-            {actionLabel}
-          </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Date Picker */}
       {showPicker && (
         <DateTimePicker
           value={date}
@@ -107,9 +99,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginHorizontal: 16,
     marginBottom: 10,
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -122,9 +113,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF9F9',
   },
   iconBlock: {
+    flexDirection: 'row', // ← was column, now row
     alignItems: 'center',
-    marginBottom: 12,
-    gap: 6,
+    gap: 10,
+    marginBottom: 10,
+    width: '100%',
   },
   iconWrapper: {
     width: 40,

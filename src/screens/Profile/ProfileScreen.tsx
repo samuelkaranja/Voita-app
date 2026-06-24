@@ -22,48 +22,160 @@ import {
   fetchVehicles,
   clearProfileError,
   resetProfile,
+  Vehicle as BackendVehicle,
 } from '../../redux/slices/profile/profileSlice';
 import { logout } from '../../redux/slices/auth/authSlice';
 import { ProfileTabBar } from './components/profile/ProfileTabBar';
 import { ProfileAvatar } from './components/profile/ProfileAvatar';
 import { PersonalTab } from './components/profile/PersonalTab';
-import { VehicleTab } from './components/profile/VehicleTab';
+import {
+  MaintenanceItem,
+  VehicleInfo,
+  VehicleTab,
+} from './components/profile/VehicleTab';
 
 type Tab = 'personal' | 'vehicle';
 type NavProp = NativeStackNavigationProp<ProfileStackParamList>;
 
-const DEFAULT_VEHICLE_DATA = {
-  id: 'default-vehicle',
-  label: 'Tesla Model 3',
-  modelYear: '2024',
-  color: 'Midnight Silver',
-  plateNumber: 'ABC-1234',
-  fuelType: 'Electric',
-  tirePressure: '38 PSI',
-  imageUri:
-    'https://images.unsplash.com/photo-1563720223185-11003d516935?w=500',
-  maintenance: [
+const formatExpiryLabel = (expiryDateStr?: string): string => {
+  if (!expiryDateStr) return 'Not set';
+  const expiry = new Date(expiryDateStr);
+  const now = new Date();
+  if (expiry < now) return 'Expired';
+
+  const diffTime = Math.abs(expiry.getTime() - now.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays <= 30) return `Expires in ${diffDays} days`;
+  const diffMonths = Math.floor(diffDays / 30);
+  return `Expires in ${diffMonths} month${diffMonths > 1 ? 's' : ''}`;
+};
+
+const mapBackendVehicleToUI = (vehicle?: BackendVehicle): VehicleInfo => {
+  const defaultImage =
+    'https://images.unsplash.com/photo-1563720223185-11003d516935?w=500';
+
+  const maintenance: MaintenanceItem[] = [
     {
-      id: 'm1',
+      id: 'insurance',
       category: 'Insurance',
-      title: 'Comprehensive Plan',
-      metaLabel: 'Expires',
-      metaValue: 'In 3 months',
-      metaVariant: 'info',
+      title: 'Comprehensive Policy',
+      metaLabel: 'Expiry Date',
+      metaValue: vehicle?.insurance_expiry
+        ? new Date(vehicle.insurance_expiry).toLocaleDateString('en-KE', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          })
+        : 'Not Set',
+      metaVariant: vehicle?.insurance_expiry
+        ? new Date(vehicle.insurance_expiry) < new Date()
+          ? 'danger'
+          : 'info'
+        : 'warning',
       accentColor: '#3B82F6',
-      iconKey: 'insurance',
+      iconKey: 'insurance' as const,
     },
     {
-      id: 'm2',
-      category: 'Annual Service',
-      title: 'Routine Maintenance',
-      metaLabel: 'Status',
-      metaValue: 'Due Soon',
-      metaVariant: 'warning',
-      accentColor: '#F59E0B',
-      iconKey: 'service',
+      id: 'license',
+      category: 'Vehicle Registration',
+      title: 'License Renewal',
+      metaLabel: 'Expiry Date',
+      metaValue: vehicle?.license_expiry
+        ? new Date(vehicle.license_expiry).toLocaleDateString('en-KE', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          })
+        : 'Not Set',
+      metaVariant: vehicle?.license_expiry
+        ? new Date(vehicle.license_expiry) < new Date()
+          ? 'danger'
+          : 'default'
+        : 'warning',
+      accentColor: '#10B981',
+      iconKey: 'license' as const,
     },
-  ],
+    {
+      id: 'service',
+      category: 'Routine Service',
+      title: 'Oil & Filter / Battery Check',
+      metaLabel: 'Last Service Date',
+      metaValue: vehicle?.last_service_date
+        ? new Date(vehicle.last_service_date).toLocaleDateString('en-KE', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          })
+        : 'Not Set',
+      metaVariant: vehicle?.last_service_date ? 'default' : 'warning',
+      accentColor: '#F59E0B',
+      iconKey: 'service' as const,
+    },
+    {
+      id: 'tires',
+      category: 'Tyre Maintenance',
+      title: 'Next Tyre Rotation',
+      metaLabel: 'Due Date',
+      metaValue: vehicle?.next_tire_rotation
+        ? new Date(vehicle.next_tire_rotation).toLocaleDateString('en-KE', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          })
+        : 'Not Set',
+      metaVariant: vehicle?.next_tire_rotation
+        ? new Date(vehicle.next_tire_rotation) < new Date()
+          ? 'warning'
+          : 'default'
+        : 'warning',
+      accentColor: '#8B5CF6',
+      iconKey: 'tires' as const,
+    },
+  ];
+
+  console.log(
+    '🚗 [mapBackendVehicleToUI] raw vehicle:',
+    JSON.stringify(vehicle, null, 2),
+  );
+  console.log('🔧 [mapBackendVehicleToUI] mapped tyre data:', {
+    pressureFront: vehicle?.pressure_front,
+    pressureRear: vehicle?.pressure_rear,
+    alloyType: vehicle?.alloy_type,
+    pressureFrontStringified:
+      vehicle?.pressure_front != null
+        ? String(vehicle.pressure_front)
+        : undefined,
+    pressureRearStringified:
+      vehicle?.pressure_rear != null
+        ? String(vehicle.pressure_rear)
+        : undefined,
+  });
+
+  return {
+    id: vehicle?.id ?? 'fallback-id',
+    label: vehicle?.vehicle_type ?? 'Vehicle Not Set',
+    modelYear: vehicle?.model_year ?? 'Not Set',
+    color: vehicle?.color ?? 'Not Set',
+    plateNumber: vehicle?.number_plate ?? 'Not Set',
+    fuelType: vehicle?.fuel_type ?? 'Not Set',
+    tirePressure:
+      vehicle?.pressure_front != null && vehicle?.pressure_rear != null
+        ? `F: ${vehicle.pressure_front} / R: ${vehicle.pressure_rear} PSI`
+        : 'Not Set',
+    pressureFront:
+      vehicle?.pressure_front != null
+        ? String(vehicle.pressure_front)
+        : undefined,
+    pressureRear:
+      vehicle?.pressure_rear != null
+        ? String(vehicle.pressure_rear)
+        : undefined,
+    alloyType: vehicle?.alloy_type ?? undefined,
+    isCalibrated: vehicle?.is_calibrated ?? false,
+    imageUri: vehicle?.photo_url ?? defaultImage,
+    maintenance,
+  };
 };
 
 // ── Main screen ───────────────────────────────────────────────────────────────
@@ -71,6 +183,9 @@ export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const dispatch = useDispatch<any>();
   const [activeTab, setActiveTab] = useState<Tab>('personal');
+  const [selectedVehicleId, setSelectedVehicleId] = useState<
+    string | undefined
+  >(undefined);
 
   const {
     profile,
@@ -108,16 +223,25 @@ export const ProfileScreen: React.FC = () => {
 
   const isLoading = loading.profile || loading.contacts || loading.vehicles;
 
-  const primaryVehicle =
-    vehicles.find((v: any) => v.id === primaryVehicleId) ?? vehicles[0];
+  // const primaryVehicle = Array.isArray(vehicles)
+  //   ? vehicles.find((v: any) => v.id === primaryVehicleId) ?? vehicles[0]
+  //   : undefined;
 
-  const handleEditPress = () => {
-    if (activeTab === 'personal') {
-      navigation.navigate('EditPersonalDetails');
-    } else {
-      navigation.navigate('EditVehicleDetails');
-    }
-  };
+  const vehicleToEdit =
+    vehicles.find((v: any) => v.id === selectedVehicleId) ??
+    vehicles.find((v: any) => v.id === primaryVehicleId) ??
+    vehicles[0];
+
+  // const handleEditPress = () => {
+  //   if (activeTab === 'personal') {
+  //     navigation.navigate('EditPersonalDetails');
+  //   } else {
+  //     if (!vehicleToEdit) return;
+  //     navigation.navigate('EditVehicleDetails', {
+  //       vehicleId: vehicleToEdit.id,
+  //     });
+  //   }
+  // };
 
   const handleLogout = () => {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
@@ -199,58 +323,25 @@ export const ProfileScreen: React.FC = () => {
                   relationship: c.relationship_type,
                   phone: c.phone,
                 }))}
+                onEditPress={() => navigation.navigate('EditPersonalDetails')}
               />
             </>
           ) : (
             <VehicleTab
-              vehicleInfo={{
-                label:
-                  primaryVehicle?.label ??
-                  primaryVehicle?.make ??
-                  DEFAULT_VEHICLE_DATA.label,
-                modelYear:
-                  primaryVehicle?.modelYear ??
-                  primaryVehicle?.model_year ??
-                  DEFAULT_VEHICLE_DATA.modelYear,
-                color: primaryVehicle?.color ?? DEFAULT_VEHICLE_DATA.color,
-                plateNumber:
-                  primaryVehicle?.plateNumber ??
-                  primaryVehicle?.plate_number ??
-                  DEFAULT_VEHICLE_DATA.plateNumber,
-                fuelType:
-                  primaryVehicle?.fuelType ??
-                  primaryVehicle?.fuel_type ??
-                  DEFAULT_VEHICLE_DATA.fuelType,
-                tirePressure:
-                  primaryVehicle?.tirePressure ??
-                  primaryVehicle?.tire_pressure ??
-                  DEFAULT_VEHICLE_DATA.tirePressure,
-                imageUri:
-                  primaryVehicle?.imageUri ??
-                  primaryVehicle?.image_url ??
-                  DEFAULT_VEHICLE_DATA.imageUri,
-                maintenance:
-                  primaryVehicle?.maintenance ??
-                  DEFAULT_VEHICLE_DATA.maintenance,
+              mappedVehicles={
+                Array.isArray(vehicles)
+                  ? vehicles.map((v: any) => mapBackendVehicleToUI(v))
+                  : []
+              }
+              onVehicleSelect={setSelectedVehicleId}
+              onEditPress={() => {
+                if (!vehicleToEdit) return;
+                navigation.navigate('EditVehicleDetails', {
+                  vehicleId: vehicleToEdit.id,
+                });
               }}
             />
           )}
-
-          {/* Footer — naturally at bottom, never overlaps */}
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={handleEditPress}
-              activeOpacity={0.85}
-            >
-              <Pencil size={16} color="#FFFFFF" strokeWidth={2} />
-              <Text style={styles.editButtonText}>
-                {activeTab === 'personal'
-                  ? 'Edit Personal Details'
-                  : 'Edit Vehicle Details'}
-              </Text>
-            </TouchableOpacity>
-          </View>
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -289,67 +380,24 @@ const styles = StyleSheet.create({
   },
   body: { flex: 1, flexDirection: 'column' },
   scrollContent: { paddingBottom: 16 },
-  footer: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 16,
-    paddingTop: 40,
-    paddingBottom: 100,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
-  },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#111827',
-    borderRadius: 14,
-    paddingVertical: 16,
-  },
-  editButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
-});
-
-const noVehicleStyles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingTop: 60,
-    paddingBottom: 24,
-  },
-  iconWrapper: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 19,
-    marginBottom: 24,
-  },
-  button: {
-    backgroundColor: '#111827',
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  // footer: {
+  //   backgroundColor: '#F3F4F6',
+  //   paddingHorizontal: 16,
+  //   paddingTop: 40,
+  //   paddingBottom: 80,
+  //   borderTopWidth: StyleSheet.hairlineWidth,
+  //   borderTopColor: '#E5E7EB',
+  // },
+  // editButton: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   justifyContent: 'center',
+  //   gap: 8,
+  //   backgroundColor: '#111827',
+  //   borderRadius: 14,
+  //   paddingVertical: 16,
+  // },
+  // editButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
 });
 
 export default ProfileScreen;

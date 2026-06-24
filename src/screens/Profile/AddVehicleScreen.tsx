@@ -26,10 +26,12 @@ import { VehicleBasicInfoSection } from './components/vehicle/VehicleBasicInfoSe
 import { TechnicalSpecsSection } from './components/vehicle/TechnicalSpecsSection';
 import { TireConfigSection } from './components/profile/edit/TireConfigSection';
 import { AddMaintenanceSection } from './components/vehicle/AddMaintenanceSection';
+import { store } from '../../redux/store';
 
 interface BasicInfo {
   numberPlate: string;
-  vehicleType: string;
+  make: string;
+  model: string;
   modelYear: string;
 }
 
@@ -63,7 +65,8 @@ export const AddVehicleScreen: React.FC = () => {
   const [imageUri, setImageUri] = useState<string | undefined>(undefined);
   const [basicInfo, setBasicInfo] = useState<BasicInfo>({
     numberPlate: '',
-    vehicleType: '',
+    make: '',
+    model: '',
     modelYear: '',
   });
   const [techSpecs, setTechSpecs] = useState<TechnicalSpecs>({
@@ -82,6 +85,9 @@ export const AddVehicleScreen: React.FC = () => {
     nextTireRotation: null,
   });
 
+  // Local sync saving loader covering downstream chained API requests
+  const [isSavingWorkflow, setIsSavingWorkflow] = useState(false);
+
   const handleBasicInfoChange = (field: keyof BasicInfo, value: string) =>
     setBasicInfo(prev => ({ ...prev, [field]: value }));
   const handleTechSpecsChange = (field: keyof TechnicalSpecs, value: string) =>
@@ -92,85 +98,149 @@ export const AddVehicleScreen: React.FC = () => {
     setMaintenance(prev => ({ ...prev, [field]: date }));
 
   const handleSave = async () => {
-    // 1. Create the vehicle first
-    const addRes = await dispatch(
-      addVehicle({
-        number_plate: basicInfo.numberPlate,
-        make: basicInfo.vehicleType.split(' ')[0] ?? basicInfo.vehicleType,
-        model:
-          basicInfo.vehicleType.split(' ').slice(1).join(' ') ||
-          basicInfo.vehicleType,
-        year: parseInt(basicInfo.modelYear, 10),
-        color: techSpecs.color,
-        fuel_type: techSpecs.fuelType,
-      }),
-    );
-
-    if (addRes.meta.requestStatus !== 'fulfilled') {
+    const token = (store.getState() as any).auth.token;
+    if (!basicInfo.numberPlate || !basicInfo.make) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: addRes.payload || 'Failed to add vehicle',
+        text1: 'Validation Error',
+        text2: 'Please fill in Number Plate and Make.',
       });
       return;
     }
 
-    // Get the new vehicle id from the response
-    const newVehicles = addRes.payload as any[];
-    const newVehicle = newVehicles?.[newVehicles.length - 1];
-    const vehicleId = newVehicle?.id;
+    try {
+      setIsSavingWorkflow(true);
 
-    if (!vehicleId) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Vehicle created but ID not returned',
-      });
-      return;
-    }
-
-    // 2. Update tires + specs on the new vehicle
-    await dispatch(
-      updateVehicle({
-        id: vehicleId,
-        data: {
-          alloy_type: tireConfig.alloyType,
-          pressure_front: tireConfig.pressureFront,
-          pressure_rear: tireConfig.pressureRear,
-        },
-      }),
-    );
-
-    // 3. Update maintenance dates if any were set
-    const hasMaintenance = Object.values(maintenance).some(Boolean);
-    if (hasMaintenance) {
-      await dispatch(
-        updateMaintenanceDates({
-          id: vehicleId,
-          data: {
-            insurance_expiry: toISO(maintenance.insuranceExpiry),
-            license_expiry: toISO(maintenance.licenseExpiry),
-            last_service_date: toISO(maintenance.lastServiceDate),
-            next_tire_rotation: toISO(maintenance.nextTireRotation),
-          },
+      // 1. Create vehicle
+      const newVehicle = await dispatch(
+        addVehicle({
+          registration_number: basicInfo.numberPlate,
+          make: basicInfo.make,
+          model: basicInfo.model || basicInfo.make,
+          year: parseInt(basicInfo.modelYear, 10) || new Date().getFullYear(),
+          color: techSpecs.color || 'Unspecified',
+          fuel_type: techSpecs.fuelType || 'Petrol',
         }),
+      ).unwrap();
+
+      console.log(
+        '✅ [handleSave] addVehicle response:',
+        JSON.stringify(newVehicle, null, 2),
       );
-    }
 
-    // 4. Upload photo if one was selected
-    if (imageUri) {
-      await dispatch(uploadVehiclePhoto({ id: vehicleId, imageUri }));
-    }
+      const vehicleId = newVehicle?.id;
+      if (!vehicleId)
+        throw new Error('Could not read vehicle ID from response.');
 
-    Toast.show({
-      type: 'success',
-      text1: 'Vehicle Added',
-      text2: 'Your vehicle has been registered',
-    });
-    navigation.goBack();
+      // 2. Tyre specs
+      console.log(
+        '🔧 [handleSave] tireConfig state before update:',
+        JSON.stringify(tireConfig, null, 2),
+      );
+
+      if (
+        tireConfig.alloyType ||
+        tireConfig.pressureFront ||
+        tireConfig.pressureRear
+      ) {
+        const tyrePayload = {
+          alloy_type: tireConfig.alloyType || undefined,
+          pressure_front: tireConfig.pressureFront
+            ? parseFloat(tireConfig.pressureFront)
+            : undefined,
+          pressure_rear: tireConfig.pressureRear
+            ? parseFloat(tireConfig.pressureRear)
+            : undefined,
+        };
+        console.log(
+          '🔧 [handleSave] sending tyre update payload:',
+          JSON.stringify(tyrePayload, null, 2),
+        );
+        const tyreRes = await dispatch(
+          updateVehicle({ id: vehicleId, data: tyrePayload }),
+        ).unwrap();
+        console.log(
+          '✅ [handleSave] updateVehicle (tyre) response:',
+          JSON.stringify(tyreRes, null, 2),
+        );
+      } else {
+        console.log(
+          '⚠️ [handleSave] tyre update SKIPPED — all tireConfig fields are empty',
+        );
+      }
+
+      // 3. Maintenance
+      console.log(
+        '📅 [handleSave] maintenance state before update:',
+        JSON.stringify(
+          {
+            insuranceExpiry: maintenance.insuranceExpiry,
+            licenseExpiry: maintenance.licenseExpiry,
+            lastServiceDate: maintenance.lastServiceDate,
+            nextTireRotation: maintenance.nextTireRotation,
+          },
+          null,
+          2,
+        ),
+      );
+
+      const hasMaintenance = Object.values(maintenance).some(Boolean);
+      if (hasMaintenance) {
+        const maintPayload = {
+          insurance_expiry: toISO(maintenance.insuranceExpiry),
+          license_expiry: toISO(maintenance.licenseExpiry),
+          last_service_date: toISO(maintenance.lastServiceDate),
+          next_tire_rotation: toISO(maintenance.nextTireRotation),
+        };
+        console.log(
+          '📅 [handleSave] sending maintenance payload:',
+          JSON.stringify(maintPayload, null, 2),
+        );
+        const maintRes = await dispatch(
+          updateMaintenanceDates({ id: vehicleId, data: maintPayload }),
+        ).unwrap();
+        console.log(
+          '✅ [handleSave] updateMaintenanceDates response:',
+          JSON.stringify(maintRes, null, 2),
+        );
+      } else {
+        console.log(
+          '⚠️ [handleSave] maintenance update SKIPPED — all dates are null',
+        );
+      }
+
+      // 4. Photo
+      if (imageUri) {
+        await dispatch(
+          uploadVehiclePhoto({ id: vehicleId, imageUri }),
+        ).unwrap();
+        console.log('✅ [handleSave] photo uploaded');
+      }
+
+      Toast.show({
+        type: 'success',
+        text1: 'Vehicle Added',
+        text2: 'Your vehicle has been registered successfully.',
+      });
+      navigation.goBack();
+    } catch (error: any) {
+      console.log(
+        '🔴 [handleSave] caught error:',
+        JSON.stringify(error, null, 2),
+      );
+      Toast.show({
+        type: 'error',
+        text1: 'Registration Failed',
+        text2: error?.message || error || 'An unexpected error occurred.',
+      });
+    } finally {
+      setIsSavingWorkflow(false);
+    }
   };
 
   const handleCancel = () => navigation.goBack();
+
+  const isPending = loading.vehicles || isSavingWorkflow;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -179,10 +249,11 @@ export const AddVehicleScreen: React.FC = () => {
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backBtn}
+          disabled={isPending}
         >
           <ChevronLeft size={22} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>AutoServe</Text>
+        <Text style={styles.headerTitle}>Add New Vehicle</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -191,14 +262,12 @@ export const AddVehicleScreen: React.FC = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        {/* ── Scrollable content ── */}
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.pageTitleBlock}>
-            <Text style={styles.pageTitle}>Add New Vehicle</Text>
             <Text style={styles.pageSubtitle}>
               Register your vehicle to manage maintenance and track safety
               details.
@@ -228,37 +297,37 @@ export const AddVehicleScreen: React.FC = () => {
             onChange={handleMaintenanceChange}
           />
 
-          {/* Spacer so content clears the fixed footer */}
-          <View style={{ height: 120 }} />
+          <View style={{ height: 30 }} />
+
+          {/* Fixed Footer Actions */}
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[styles.saveButton, isPending && { opacity: 0.7 }]}
+              onPress={handleSave}
+              disabled={isPending}
+              activeOpacity={0.85}
+            >
+              {isPending ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <Save size={16} color="#FFFFFF" strokeWidth={2} />
+                  <Text style={styles.saveText}>Save Vehicle</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={handleCancel}
+              disabled={isPending}
+              activeOpacity={0.7}
+            >
+              <X size={15} color="#6B7280" strokeWidth={2} />
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
-
-        {/* ── Fixed footer — outside ScrollView so it never scrolls away ── */}
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.saveButton, loading.vehicles && { opacity: 0.7 }]}
-            onPress={handleSave}
-            disabled={loading.vehicles}
-            activeOpacity={0.85}
-          >
-            {loading.vehicles ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <>
-                <Save size={16} color="#FFFFFF" strokeWidth={2} />
-                <Text style={styles.saveText}>Save Vehicle</Text>
-              </>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={handleCancel}
-            activeOpacity={0.7}
-          >
-            <X size={15} color="#6B7280" strokeWidth={2} />
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -295,13 +364,18 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 4,
   },
-  pageSubtitle: { fontSize: 13, color: '#6B7280', lineHeight: 19 },
+  pageSubtitle: {
+    fontSize: 15,
+    color: '#6B7280',
+    lineHeight: 19,
+    paddingBottom: 8,
+  },
   scrollContent: { paddingBottom: 16 },
   footer: {
     backgroundColor: '#F3F4F6',
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 24,
+    paddingTop: 8,
+    paddingBottom: 80,
     gap: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E5E7EB',

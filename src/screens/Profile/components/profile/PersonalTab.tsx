@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Phone } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Phone, Pencil } from 'lucide-react-native';
 import { InfoCard } from './InfoCard';
 import { SectionHeader } from './SectionHeader';
 import { EmergencyContactCard } from './EmergencyContactCard';
@@ -24,11 +24,13 @@ interface EmergencyContact {
 interface Props {
   personalInfo: PersonalInfo;
   emergencyContacts: EmergencyContact[];
+  onEditPress: () => void;
 }
 
 export const PersonalTab: React.FC<Props> = ({
   personalInfo,
   emergencyContacts,
+  onEditPress,
 }) => {
   const contactFields = [
     { label: 'First Name', value: personalInfo.firstName },
@@ -44,9 +46,9 @@ export const PersonalTab: React.FC<Props> = ({
       <InfoCard fields={contactFields} />
 
       <SectionHeader title="Emergency Contacts" />
-      
+
       {emergencyContacts.length > 0 ? (
-        emergencyContacts.map((contact) => (
+        emergencyContacts.map(contact => (
           <EmergencyContactCard
             key={contact.id}
             contact={contact}
@@ -54,7 +56,7 @@ export const PersonalTab: React.FC<Props> = ({
           />
         ))
       ) : (
-        // Placeholder when no contacts added yet 
+        // Placeholder when no contacts added yet
         <View style={styles.emptyContactCard}>
           <View style={styles.emptyIconWrapper}>
             <Phone size={20} color="#9CA3AF" strokeWidth={1.8} />
@@ -67,6 +69,18 @@ export const PersonalTab: React.FC<Props> = ({
           </View>
         </View>
       )}
+
+      {/* Edit button at the bottom of the personal tab */}
+      <View style={styles.editFooter}>
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={onEditPress}
+          activeOpacity={0.85}
+        >
+          <Pencil size={16} color="#FFFFFF" strokeWidth={2} />
+          <Text style={styles.editButtonText}>Edit Personal Details</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -111,4 +125,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#9CA3AF',
   },
+  editFooter: {
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 80,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#111827',
+    borderRadius: 14,
+    paddingVertical: 16,
+  },
+  editButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
 });

@@ -32,12 +32,12 @@ export default function AppTabs() {
         component={ServicesStack}
         options={{ headerShown: false }}
       />
-
+      {/* 
       <Tab.Screen
         name="Marketplace"
         component={MarketplaceScreen}
         options={{ header: () => <MarketplaceHeader /> }}
-      />
+      /> */}
 
       <Tab.Screen
         name="Community"
@@ -45,7 +45,7 @@ export default function AppTabs() {
         options={{ header: () => <CommunityHeader /> }}
       />
 
-      <Tab.Screen
+      {/* <Tab.Screen
         name="Insurance"
         component={InsuranceScreen}
         options={{ header: () => <InsuranceHeader /> }}
@@ -55,7 +55,7 @@ export default function AppTabs() {
         name="Claims"
         component={ClaimsScreen}
         options={{ header: () => <ClaimsHeader /> }}
-      />
+      /> */}
 
       <Tab.Screen
         name="Profile"

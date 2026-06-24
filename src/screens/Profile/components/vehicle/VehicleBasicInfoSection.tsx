@@ -5,7 +5,8 @@ import { AddVehicleImageUploader } from './AddVehicleImageUploader';
 
 interface BasicInfo {
   numberPlate: string;
-  vehicleType: string;
+  make: string;
+  model: string;
   modelYear: string;
 }
 
@@ -33,21 +34,35 @@ export const VehicleBasicInfoSection: React.FC<Props> = ({
         label="Number Plate"
         value={info.numberPlate}
         onChangeText={v => onChange('numberPlate', v)}
-        placeholder="e.g. ABC-1234"
+        placeholder="e.g. KAB 123C"
         autoCapitalize="characters"
       />
 
+      {/* Make + Model side by side */}
       <View style={styles.row}>
         <View style={styles.rowHalf}>
           <FormField
-            label="Vehicle Type"
-            value={info.vehicleType}
-            onChangeText={v => onChange('vehicleType', v)}
-            placeholder="SUV, Sedan..."
+            label="Make"
+            value={info.make}
+            onChangeText={v => onChange('make', v)}
+            placeholder="e.g. Toyota"
             autoCapitalize="words"
             containerStyle={styles.noBottomMargin}
           />
         </View>
+        <View style={styles.rowHalf}>
+          <FormField
+            label="Model"
+            value={info.model}
+            onChangeText={v => onChange('model', v)}
+            placeholder="e.g. Corolla"
+            autoCapitalize="words"
+            containerStyle={styles.noBottomMargin}
+          />
+        </View>
+      </View>
+
+      <View style={[styles.row, { marginTop: 12 }]}>
         <View style={styles.rowHalf}>
           <FormField
             label="Model Year"
@@ -59,6 +74,8 @@ export const VehicleBasicInfoSection: React.FC<Props> = ({
             containerStyle={styles.noBottomMargin}
           />
         </View>
+        {/* Spacer so year field doesn't stretch full width */}
+        <View style={styles.rowHalf} />
       </View>
     </View>
   );

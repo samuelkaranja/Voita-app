@@ -4,7 +4,8 @@ import { FormField } from './FormField';
 
 interface VehicleSpecs {
   numberPlate: string;
-  vehicleType: string;
+  make: string;
+  model: string;
   modelYear: string;
   color: string;
   fuelType: string;
@@ -26,12 +27,28 @@ export const VehicleSpecsSection: React.FC<Props> = ({ specs, onChange }) => {
         onChangeText={v => onChange('numberPlate', v)}
         autoCapitalize="characters"
       />
-      <FormField
-        label="VEHICLE TYPE"
-        value={specs.vehicleType}
-        onChangeText={v => onChange('vehicleType', v)}
-        autoCapitalize="words"
-      />
+
+      {/* Make + Model side by side */}
+      <View style={styles.row}>
+        <View style={styles.rowHalf}>
+          <FormField
+            label="MAKE"
+            value={specs.make}
+            onChangeText={v => onChange('make', v)}
+            autoCapitalize="words"
+            placeholder="e.g. Toyota"
+          />
+        </View>
+        <View style={styles.rowHalf}>
+          <FormField
+            label="MODEL"
+            value={specs.model}
+            onChangeText={v => onChange('model', v)}
+            autoCapitalize="words"
+            placeholder="e.g. Corolla"
+          />
+        </View>
+      </View>
 
       {/* Model Year + Color side by side */}
       <View style={styles.row}>
@@ -63,7 +80,7 @@ export const VehicleSpecsSection: React.FC<Props> = ({ specs, onChange }) => {
   );
 };
 
-// ── Inline color field with dot indicator ────────────────────────────────────
+// ── Inline color field with dot indicator ─────────────────────────────────────
 const COLOR_DOT: Record<string, string> = {
   obsidian: '#1a1a2e',
   black: '#000000',
@@ -87,7 +104,9 @@ const ColorField: React.FC<ColorFieldProps> = ({ label, value, onChange }) => {
   return (
     <View style={colorStyles.wrapper}>
       <Text style={colorStyles.label}>{label}</Text>
-      <View style={[colorStyles.inputRow, isFocused && colorStyles.inputRowFocused]}>
+      <View
+        style={[colorStyles.inputRow, isFocused && colorStyles.inputRowFocused]}
+      >
         <View style={[colorStyles.dot, { backgroundColor: dotColor }]} />
         <TextInput
           value={value}
@@ -123,7 +142,7 @@ const colorStyles = StyleSheet.create({
     height: 48,
   },
   inputRowFocused: {
-    borderColor: '#111827', // matches FormField focus style
+    borderColor: '#111827',
   },
   dot: {
     width: 12,

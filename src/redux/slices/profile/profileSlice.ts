@@ -43,8 +43,8 @@ export interface Vehicle {
   color: string;
   fuel_type: string;
   alloy_type?: string;
-  pressure_front?: string;
-  pressure_rear?: string;
+  pressure_front?: number;
+  pressure_rear?: number;
   photo_url?: string;
   is_calibrated: boolean;
   insurance_expiry?: string;
@@ -313,10 +313,10 @@ export const fetchVehicles = createAsyncThunk(
     if (!token) return rejectWithValue('Not authenticated');
     try {
       const res = await axios.get(
-        `${BASE_URL}/api/v1/vehicles`,
+        `${BASE_URL}/api/v1/vehicles/`,
         authHeader(token),
       );
-      return res.data;
+      return res.data; // { vehicles: [...], total: n, primary_vehicle: "uuid" }
     } catch (err: any) {
       return rejectWithValue(extractError(err));
     }
@@ -326,27 +326,46 @@ export const fetchVehicles = createAsyncThunk(
 export const addVehicle = createAsyncThunk(
   'profile/addVehicle',
   async (
-    data: {
-      number_plate: string;
+    vehicleData: {
+      registration_number: string;
       make: string;
       model: string;
       year: number;
       color: string;
       fuel_type: string;
+      alloy_type?: string;
+      pressure_front?: number;
+      pressure_rear?: number;
+      image_url?: string;
+      is_calibrated?: boolean;
+      insurance_expiry?: string;
+      license_expiry?: string;
+      last_service_date?: string;
+      next_tire_rotation?: string;
     },
     { getState, rejectWithValue },
   ) => {
     const token = (getState() as any).auth.token;
     if (!token) return rejectWithValue('Not authenticated');
     try {
-      const res = await axios.post(`${BASE_URL}/api/v1/vehicles`, data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      debugRequest('addVehicle', {
+        url: `${BASE_URL}/api/v1/vehicles/`,
+        vehicleData,
       });
-      return res.data.vehicles as Vehicle[];
+      const res = await axios.post(
+        `${BASE_URL}/api/v1/vehicles/`,
+        vehicleData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+      debugResponse('addVehicle', res.data);
+      return res.data; // single Vehicle object
     } catch (err: any) {
+      debugError('addVehicle', err);
       return rejectWithValue(extractError(err));
     }
   },
@@ -355,20 +374,48 @@ export const addVehicle = createAsyncThunk(
 export const updateVehicle = createAsyncThunk(
   'profile/updateVehicle',
   async (
-    { id, data }: { id: string; data: Partial<Vehicle> },
+    {
+      id,
+      data,
+    }: {
+      id: string;
+      data: {
+        registration_number?: string;
+        make?: string;
+        model?: string;
+        year?: number;
+        color?: string;
+        fuel_type?: string;
+        alloy_type?: string;
+        pressure_front?: number;
+        pressure_rear?: number;
+        image_url?: string;
+        is_calibrated?: boolean;
+        insurance_expiry?: string;
+        license_expiry?: string;
+        last_service_date?: string;
+        next_tire_rotation?: string;
+      };
+    },
     { getState, rejectWithValue },
   ) => {
     const token = (getState() as any).auth.token;
     if (!token) return rejectWithValue('Not authenticated');
     try {
+      debugRequest('updateVehicle', {
+        url: `${BASE_URL}/api/v1/vehicles/${id}`,
+        data,
+      });
       const res = await axios.put(`${BASE_URL}/api/v1/vehicles/${id}`, data, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
-      return res.data as Vehicle;
+      debugResponse('updateVehicle', res.data);
+      return res.data; // single Vehicle object
     } catch (err: any) {
+      debugError('updateVehicle', err);
       return rejectWithValue(extractError(err));
     }
   },
@@ -391,6 +438,29 @@ export const deleteVehicle = createAsyncThunk(
   },
 );
 
+export const setPrimaryVehicle = createAsyncThunk(
+  'profile/setPrimaryVehicle',
+  async (id: string, { getState, rejectWithValue }) => {
+    const token = (getState() as any).auth.token;
+    if (!token) return rejectWithValue('Not authenticated');
+    try {
+      const res = await axios.put(
+        `${BASE_URL}/api/v1/vehicles/${id}/set-primary`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+      return { vehicle: res.data, primaryId: id };
+    } catch (err: any) {
+      return rejectWithValue(extractError(err));
+    }
+  },
+);
+
 export const uploadVehiclePhoto = createAsyncThunk(
   'profile/uploadVehiclePhoto',
   async (
@@ -406,6 +476,10 @@ export const uploadVehiclePhoto = createAsyncThunk(
         type: 'image/jpeg',
         name: 'vehicle.jpg',
       } as any);
+      debugRequest('uploadVehiclePhoto', {
+        url: `${BASE_URL}/api/v1/vehicles/${id}/photo`,
+        imageUri,
+      });
       const res = await axios.post(
         `${BASE_URL}/api/v1/vehicles/${id}/photo`,
         form,
@@ -416,15 +490,17 @@ export const uploadVehiclePhoto = createAsyncThunk(
           },
         },
       );
-      return res.data as Vehicle;
+      debugResponse('uploadVehiclePhoto', res.data);
+      return res.data; // single Vehicle object with updated photo_url
     } catch (err: any) {
+      debugError('uploadVehiclePhoto', err);
       return rejectWithValue(extractError(err));
     }
   },
 );
 
 export const updateMaintenanceDates = createAsyncThunk(
-  'profile/updateMaintenance',
+  'profile/updateMaintenanceDates',
   async (
     {
       id,
@@ -433,9 +509,9 @@ export const updateMaintenanceDates = createAsyncThunk(
       id: string;
       data: {
         insurance_expiry?: string;
-        license_expiry?: string;
         last_service_date?: string;
         next_tire_rotation?: string;
+        license_expiry?: string;
       };
     },
     { getState, rejectWithValue },
@@ -443,6 +519,10 @@ export const updateMaintenanceDates = createAsyncThunk(
     const token = (getState() as any).auth.token;
     if (!token) return rejectWithValue('Not authenticated');
     try {
+      debugRequest('updateMaintenanceDates', {
+        url: `${BASE_URL}/api/v1/vehicles/${id}/maintenance`,
+        data,
+      });
       const res = await axios.put(
         `${BASE_URL}/api/v1/vehicles/${id}/maintenance`,
         data,
@@ -453,8 +533,10 @@ export const updateMaintenanceDates = createAsyncThunk(
           },
         },
       );
-      return res.data;
+      debugResponse('updateMaintenanceDates', res.data);
+      return res.data; // { id, insurance_expiry, last_service_date, next_tire_rotation, license_expiry }
     } catch (err: any) {
+      debugError('updateMaintenanceDates', err);
       return rejectWithValue(extractError(err));
     }
   },
@@ -562,15 +644,24 @@ const profileSlice = createSlice({
           state.error = action.payload as string;
         }
       })
+
       .addCase(addVehicle.fulfilled, (state, action) => {
-        state.vehicles = action.payload;
+        state.vehicles.push(action.payload);
+        if (state.vehicles.length === 1) {
+          state.primaryVehicleId = action.payload.id;
+        }
       })
+
       .addCase(updateVehicle.fulfilled, (state, action) => {
         const idx = state.vehicles.findIndex(v => v.id === action.payload.id);
         if (idx !== -1) state.vehicles[idx] = action.payload;
       })
+
       .addCase(deleteVehicle.fulfilled, (state, action) => {
         state.vehicles = state.vehicles.filter(v => v.id !== action.payload);
+      })
+      .addCase(setPrimaryVehicle.fulfilled, (state, action) => {
+        state.primaryVehicleId = action.payload.primaryId;
       })
       .addCase(uploadVehiclePhoto.fulfilled, (state, action) => {
         const idx = state.vehicles.findIndex(v => v.id === action.payload.id);

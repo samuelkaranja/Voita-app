@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
 type StatusVariant = 'default' | 'warning' | 'danger' | 'info';
 
@@ -11,14 +11,27 @@ interface Props {
   metaVariant?: StatusVariant;
   icon: React.ReactNode;
   accentColor: string;
-  onActionPress?: () => void;
 }
 
 const META_COLORS: Record<StatusVariant, string> = {
   default: '#111827',
-  warning: '#16A34A', // green — "upcoming / in X km"
-  danger: '#DC2626', // red — "action required"
+  warning: '#D97706',
+  danger: '#DC2626',
   info: '#2563EB',
+};
+
+const META_BG: Record<StatusVariant, string> = {
+  default: '#F9FAFB',
+  warning: '#FFFBEB',
+  danger: '#FEF2F2',
+  info: '#EFF6FF',
+};
+
+const META_LABELS: Record<StatusVariant, string> = {
+  default: 'On Track',
+  warning: 'Attention',
+  danger: 'Overdue',
+  info: 'Active',
 };
 
 export const MaintenanceCard: React.FC<Props> = ({
@@ -29,47 +42,46 @@ export const MaintenanceCard: React.FC<Props> = ({
   metaVariant = 'default',
   icon,
   accentColor,
-  onActionPress,
 }) => {
   return (
     <View style={styles.wrapper}>
       <View style={[styles.accentBar, { backgroundColor: accentColor }]} />
       <View style={styles.body}>
+        {/* Top row: category label + icon */}
         <View style={styles.topRow}>
           <Text style={styles.category}>{category}</Text>
           <View
             style={[
               styles.iconWrapper,
-              { backgroundColor: `${accentColor}15` },
+              { backgroundColor: `${accentColor}18` },
             ]}
           >
             {icon}
           </View>
         </View>
-        <Text style={styles.title}>{title}</Text>
-        <View style={styles.metaBlock}>
-          <Text style={styles.metaLabel}>{metaLabel}</Text>
-          <Text style={[styles.metaValue, { color: META_COLORS[metaVariant] }]}>
-            {metaValue}
-          </Text>
-        </View>
 
-        {/* ── Action button — only renders if onActionPress is provided ── */}
-        {onActionPress && (
-          <TouchableOpacity
-            onPress={onActionPress}
-            style={styles.actionButton}
-            activeOpacity={0.7}
+        {/* Title */}
+        <Text style={styles.title}>{title}</Text>
+
+        {/* Bottom row: date value + status badge */}
+        <View style={styles.bottomRow}>
+          <View style={styles.dateBlock}>
+            <Text style={styles.metaLabel}>{metaLabel}</Text>
+            <Text style={styles.metaValue}>{metaValue}</Text>
+          </View>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: META_BG[metaVariant] },
+            ]}
           >
-            <Text style={[styles.actionText, { color: accentColor }]}>
-              {category === 'Insurance' || category === 'License'
-                ? 'RENEW'
-                : category === 'Service'
-                ? 'BOOK NOW'
-                : 'SCHEDULE'}
+            <Text
+              style={[styles.statusText, { color: META_COLORS[metaVariant] }]}
+            >
+              {META_LABELS[metaVariant]}
             </Text>
-          </TouchableOpacity>
-        )}
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -121,28 +133,36 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#111827',
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  metaBlock: {
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  dateBlock: {
     gap: 2,
   },
   metaLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#9CA3AF',
+    fontWeight: '500',
   },
   metaValue: {
     fontSize: 14,
     fontWeight: '700',
+    color: '#111827',
   },
-  actionButton: {
-    alignSelf: 'flex-start',
-    marginTop: 8,
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
   },
-  actionText: {
-    fontSize: 12,
+  statusText: {
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
   },
 });

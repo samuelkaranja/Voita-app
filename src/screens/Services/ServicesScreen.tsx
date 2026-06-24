@@ -49,11 +49,11 @@ const CATEGORIES: CategoryItem[] = [
   { id: 'carwash', label: 'Car Wash', Icon: Droplets },
   { id: 'towing', label: 'Towing', Icon: Truck },
   { id: 'scouts', label: 'Scout', Icon: UserRound },
-  { id: 'paint', label: 'Paint Jobs', Icon: PaintBucket },
-  { id: 'upholstery', label: 'Upholstery', Icon: Armchair },
-  { id: 'specialists', label: 'Specialists', Icon: Stethoscope },
-  { id: 'dealers', label: 'Dealers', Icon: Car },
-  { id: 'driving', label: 'Driving School', Icon: GraduationCap },
+  // { id: 'paint', label: 'Paint Jobs', Icon: PaintBucket },
+  // { id: 'upholstery', label: 'Upholstery', Icon: Armchair },
+  // { id: 'specialists', label: 'Specialists', Icon: Stethoscope },
+  // { id: 'dealers', label: 'Dealers', Icon: Car },
+  // { id: 'driving', label: 'Driving School', Icon: GraduationCap },
 ];
 
 const TOP_SPECIALISTS: SpecialistItem[] = [
@@ -117,7 +117,7 @@ const NEARBY_SERVICES: NearbyServiceItem[] = [
     reviewCount: 94,
     distanceKm: 5.0,
     imageUri:
-      'https://images.unsplash.com/photo-1616001295504-cd2e34a3278e?w=300&q=80',
+      'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=300&q=80',
     verified: true,
   },
 ];
@@ -151,10 +151,10 @@ export default function ServicesScreen() {
       >
         <SearchBar value={search} onChangeText={setSearch} />
 
-        <FilterChips
+        {/* <FilterChips
           filters={filters}
           onFilterPress={id => setActiveFilter(id)}
-        />
+        /> */}
 
         <View style={styles.section}>
           <SectionHeader title="Categories" />
