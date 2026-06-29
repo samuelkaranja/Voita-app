@@ -1,0 +1,147 @@
+export interface SpeedCamera {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  speedLimitKph: number | null;
+  road: string;
+}
+
+export const NAIROBI_SPEED_CAMERAS: SpeedCamera[] = [
+  {
+    id: 'sc_001',
+    name: 'Safari Park',
+    latitude: -1.2266,
+    longitude: 36.8825,
+    speedLimitKph: 110,
+    road: 'Thika Road',
+  },
+  {
+    id: 'sc_002',
+    name: 'Roysambu / TRM Area',
+    latitude: -1.2195,
+    longitude: 36.8884,
+    speedLimitKph: 100,
+    road: 'Thika Road',
+  },
+  {
+    id: 'sc_003',
+    name: 'Jomoko – Thika Turnoff',
+    latitude: -1.235,
+    longitude: 36.875,
+    speedLimitKph: 80,
+    road: 'Thika Road',
+  },
+  {
+    id: 'sc_004',
+    name: 'Allsops / GSU',
+    latitude: -1.2415,
+    longitude: 36.8692,
+    speedLimitKph: 80,
+    road: 'Thika Road',
+  },
+  {
+    id: 'sc_005',
+    name: 'Mombasa Road',
+    latitude: -1.3297,
+    longitude: 36.8738,
+    speedLimitKph: null,
+    road: 'Mombasa Road',
+  },
+  {
+    id: 'sc_006',
+    name: 'Cabanas / JKIA Approach',
+    latitude: -1.3303,
+    longitude: 36.8889,
+    speedLimitKph: 80,
+    road: 'Mombasa Road',
+  },
+  {
+    id: 'sc_007',
+    name: 'Nyayo Stadium – Sameer Business Park',
+    latitude: -1.3041,
+    longitude: 36.8246,
+    speedLimitKph: 80,
+    road: 'Mombasa Road',
+  },
+  {
+    id: 'sc_008',
+    name: 'Nairobi Expressway',
+    latitude: -1.295,
+    longitude: 36.82,
+    speedLimitKph: 80,
+    road: 'Nairobi Expressway',
+  },
+  {
+    id: 'sc_009',
+    name: 'Museum Hill – Westlands',
+    latitude: -1.2729,
+    longitude: 36.8137,
+    speedLimitKph: 80,
+    road: 'Uhuru Highway',
+  },
+  {
+    id: 'sc_010',
+    name: 'Pangani / Muthaiga Interchange',
+    latitude: -1.2668,
+    longitude: 36.8344,
+    speedLimitKph: 80,
+    road: 'Thika Road',
+  },
+  {
+    id: 'sc_011',
+    name: 'Northern Bypass – Gitaru/Wangige',
+    latitude: -1.2153,
+    longitude: 36.8527,
+    speedLimitKph: 80,
+    road: 'Northern Bypass',
+  },
+  {
+    id: 'sc_012',
+    name: 'Northern Bypass – Ruaka/Wangige Stretch',
+    latitude: -1.205,
+    longitude: 36.7815,
+    speedLimitKph: 80,
+    road: 'Northern Bypass',
+  },
+  {
+    id: 'sc_013',
+    name: 'Southern Bypass – Ngong Road Interchange',
+    latitude: -1.3195,
+    longitude: 36.7985,
+    speedLimitKph: 80,
+    road: 'Southern Bypass',
+  },
+  {
+    id: 'sc_014',
+    name: 'Southern Bypass – Kikuyu Side',
+    latitude: -1.3255,
+    longitude: 36.7526,
+    speedLimitKph: 80,
+    road: 'Southern Bypass',
+  },
+  {
+    id: 'sc_015',
+    name: 'Waiyaki Way – Kangemi/Uthiru',
+    latitude: -1.2645,
+    longitude: 36.7402,
+    speedLimitKph: 80,
+    road: 'Waiyaki Way',
+  },
+  {
+    id: 'sc_016',
+    name: 'Langata Road / Uhuru Gardens',
+    latitude: -1.3244,
+    longitude: 36.7985,
+    speedLimitKph: 50,
+    road: 'Langata Road',
+  },
+  {
+    id: 'sc_017',
+    name: 'Red Hill',
+    latitude: -1.2258,
+    longitude: 36.7944,
+    speedLimitKph: 50,
+    road: 'Red Hill Road',
+  },
+];

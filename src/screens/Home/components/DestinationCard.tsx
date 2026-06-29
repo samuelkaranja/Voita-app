@@ -8,9 +8,10 @@ import {
   FlatList,
   Pressable,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { Navigation } from 'lucide-react-native';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 
 import { setDestination } from '../../../redux/slices/map/mapsSlice';
 
@@ -19,10 +20,29 @@ const GOOGLE_KEY = 'AIzaSyDAaZnQ6p4Zase38K03Rk8LbCyGlfmaUCg';
 // 1. ADD THE style PROP HERE
 export default function DestinationCard({ style }: { style?: any }) {
   const dispatch = useDispatch();
+  const userPhone = useSelector((state: any) => state.auth.user?.phone);
 
   const [text, setText] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const HISTORY_KEY = userPhone
+    ? `voita_destination_history_${userPhone}`
+    : null;
+  const MAX_HISTORY = 5;
+
+  const [history, setHistory] = useState<
+    { place_id: string; description: string }[]
+  >([]);
+
+  const [historyExpanded, setHistoryExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!HISTORY_KEY) return;
+    AsyncStorage.getItem(HISTORY_KEY).then(raw => {
+      if (raw) setHistory(JSON.parse(raw));
+    });
+  }, [HISTORY_KEY]);
 
   // =========================
   // AUTOCOMPLETE
@@ -94,6 +114,19 @@ export default function DestinationCard({ style }: { style?: any }) {
           longitude: location.lng,
         }),
       );
+
+      const newEntry = {
+        place_id: place.place_id,
+        description: place.description,
+      };
+      const updated = [
+        newEntry,
+        ...history.filter(h => h.place_id !== place.place_id),
+      ].slice(0, MAX_HISTORY);
+      setHistory(updated);
+      if (HISTORY_KEY) {
+        AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+      }
 
       setText(place.description);
       setSuggestions([]);
@@ -187,6 +220,41 @@ export default function DestinationCard({ style }: { style?: any }) {
           />
         </View>
       )}
+
+      {/* HISTORY — shown when input is empty and no suggestions */}
+      {suggestions.length === 0 && text.length === 0 && history.length > 0 && (
+        <View style={styles.suggestionsBox}>
+          <TouchableOpacity
+            onPress={() => setHistoryExpanded(prev => !prev)}
+            style={styles.historyToggle}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.historyLabel}>🕐 Recent</Text>
+            <Text style={styles.historyChevron}>
+              {historyExpanded ? '▲' : '▼'}
+            </Text>
+          </TouchableOpacity>
+
+          {historyExpanded && (
+            <FlatList
+              data={history}
+              keyExtractor={item => item.place_id}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => {
+                    selectPlace(item);
+                    setHistoryExpanded(false);
+                  }}
+                  style={styles.suggestionItem}
+                >
+                  <Text style={styles.historyIcon}>🕐</Text>
+                  <Text style={styles.suggestionText}>{item.description}</Text>
+                </Pressable>
+              )}
+            />
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -236,12 +304,34 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    gap: 8,
   },
   suggestionText: {
     fontSize: 13,
     color: '#0d2b1f',
+  },
+  historyToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  historyLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#000000',
+  },
+  historyChevron: {
+    fontSize: 10,
+    color: '#6b7280',
+  },
+  historyIcon: {
+    fontSize: 13,
   },
 });

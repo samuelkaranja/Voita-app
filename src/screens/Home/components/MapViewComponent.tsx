@@ -1,8 +1,9 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import { useDayNight } from '../../../hooks/useDayNight';
 import { DAY_MAP_STYLE, NIGHT_MAP_STYLE } from '../../../constants/mapStyles';
+import { NAIROBI_SPEED_CAMERAS } from '../../../constants/speedCamerasData';
 
 interface Props {
   location: any;
@@ -14,6 +15,7 @@ interface Props {
     longitude: number;
     text?: string;
   };
+  showCameras?: boolean;
 }
 
 export default function MapViewComponent({
@@ -22,6 +24,7 @@ export default function MapViewComponent({
   safeRouteCoords,
   normalRouteCoords,
   destination,
+  showCameras = false,
 }: Props) {
   const mapRef = useRef<MapView | null>(null);
 
@@ -157,6 +160,28 @@ export default function MapViewComponent({
         );
       })}
 
+      {/* Speed Camera Markers */}
+      {showCameras &&
+        NAIROBI_SPEED_CAMERAS.map(cam => (
+          <Marker
+            key={cam.id}
+            coordinate={{ latitude: cam.latitude, longitude: cam.longitude }}
+            title={cam.name}
+            description={
+              cam.speedLimitKph
+                ? `Limit: ${cam.speedLimitKph} km/h`
+                : 'Speed camera'
+            }
+            anchor={{ x: 0.5, y: 0.5 }}
+          >
+            <View style={styles.cameraMarker}>
+              <Text style={styles.cameraMarkerSpeed}>
+                {cam.speedLimitKph ?? '?'}
+              </Text>
+            </View>
+          </Marker>
+        ))}
+
       {/* Routes */}
 
       {safeRoute.length > 0 ? (
@@ -192,5 +217,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF3D00',
     borderWidth: 2,
     borderColor: '#fff',
+  },
+  cameraMarker: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#e53935',
+    borderWidth: 2.5,
+    borderColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+  },
+  cameraMarkerSpeed: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#fff',
   },
 });

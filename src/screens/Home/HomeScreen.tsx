@@ -29,11 +29,13 @@ import {
 import { useLocation } from '../../hooks/useLocation';
 import { useDayNight } from '../../hooks/useDayNight';
 
+import { useSpeedCameraAlert } from '../../hooks/useSpeedCameraAlert';
+
 /* ........ Types ........ */
 
 interface Alert {
   id: string;
-  type: 'flood' | 'congestion';
+  type: 'flood' | 'congestion' | 'camera';
   title: string;
   subtitle: string;
 }
@@ -64,6 +66,11 @@ export default function HomeScreen() {
   // Flood and Congestion Alerts
   const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([]);
 
+  const nearbyCameras = useSpeedCameraAlert(
+    location?.coords?.latitude,
+    location?.coords?.longitude,
+  );
+
   const alerts = useMemo(() => {
     const flood = floodAlerts.map((a: any) => ({
       id: a.id,
@@ -79,13 +86,26 @@ export default function HomeScreen() {
       subtitle: a.subtitle,
     }));
 
-    return [...flood, ...congestion].filter(
+    const cameras = nearbyCameras.map(cam => ({
+      id: cam.id,
+      type: 'camera' as const,
+      title: `📷 Speed Camera – ${cam.name}`,
+      subtitle: cam.speedLimitKph
+        ? `Limit: ${cam.speedLimitKph} km/h · ${Math.round(
+            cam.distanceMeters,
+          )}m ahead`
+        : `Speed camera ahead · ${Math.round(cam.distanceMeters)}m`,
+    }));
+
+    return [...cameras, ...flood, ...congestion].filter(
       a => !dismissedAlerts.includes(a.id),
     );
-  }, [floodAlerts, congestionAlerts, dismissedAlerts]);
+  }, [floodAlerts, congestionAlerts, nearbyCameras, dismissedAlerts]);
 
   const isSafeRouteActive =
     selectedTag === 'Lady-Friendly' && safeRouteCoords.length > 0;
+
+  const showCameras = selectedTag === 'Speed Cameras';
 
   const safety = safeRouteInfo?.safetyInsights;
 
@@ -214,6 +234,11 @@ export default function HomeScreen() {
         }),
       );
     }
+
+    if (tag === 'Speed Cameras') {
+      // No fetch needed — just the tag toggle drives showCameras
+      return;
+    }
   };
 
   /* Dismiss Alert */
@@ -287,6 +312,7 @@ export default function HomeScreen() {
             safeRouteCoords={safeRouteCoords}
             normalRouteCoords={normalRouteCoords}
             destination={destination}
+            showCameras={showCameras}
           />
         ) : (
           <View style={styles.centerFull}>
@@ -362,7 +388,11 @@ export default function HomeScreen() {
                 alerts.map(alert => (
                   <View key={alert.id} style={styles.alertRow}>
                     <Text style={styles.alertIcon}>
-                      {alert.type === 'flood' ? '🌧' : '🚧'}
+                      {alert.type === 'flood'
+                        ? '🌧'
+                        : alert.type === 'camera'
+                        ? '📷'
+                        : '🚧'}
                     </Text>
                     <View style={styles.alertText}>
                       <Text style={styles.alertTitle}>{alert.title}</Text>
@@ -544,42 +574,6 @@ const styles = StyleSheet.create({
     zIndex: 20,
     elevation: 20,
   },
-
-  alertsPanelHeader: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-  },
-  alertsPanelSpeed: {
-    fontSize: 25,
-    fontWeight: '800',
-    color: '#0d2b1f',
-  },
-  alertsPanelSpeedUnit: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#8ff6d0',
-    backgroundColor: 'rgba(13, 43, 31, 0.92)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  alertsPanelTitle: {
-    flex: 1,
-    textAlign: 'right',
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#888',
-    letterSpacing: 0.5,
-  },
-  alertsDivider: {
-    height: 0.5,
-    backgroundColor: '#f0f0f0',
-    marginBottom: 4,
-  },
   bellBadge: {
     position: 'absolute',
     top: -4,
@@ -595,12 +589,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 9,
     fontWeight: '700',
-  },
-  alertsEmpty: {
-    fontSize: 12,
-    color: '#999',
-    textAlign: 'center',
-    paddingVertical: 10,
   },
 
   /* Bell */

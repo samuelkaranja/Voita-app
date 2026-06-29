@@ -1,6 +1,12 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { Flame, Venus, AlertTriangle } from 'lucide-react-native';
+import {
+  View,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
+import { Flame, Venus, AlertTriangle, Camera } from 'lucide-react-native';
 
 interface Props {
   selected: string | null;
@@ -17,12 +23,17 @@ export default function TagSelector({
     { label: 'Petrol', icon: Flame },
     { label: 'Lady-Friendly', icon: Venus },
     { label: 'Emergency', icon: AlertTriangle },
+    { label: 'Speed Cameras', icon: Camera },
   ];
 
   console.log('onSelect:', onSelect);
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.container}
+    >
       {tags.map(tag => {
         const isActive = selected === tag.label;
         const Icon = tag.icon;
@@ -45,7 +56,7 @@ export default function TagSelector({
           </TouchableOpacity>
         );
       })}
-    </View>
+    </ScrollView>
   );
 }
 
