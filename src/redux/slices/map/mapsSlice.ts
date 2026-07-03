@@ -2,6 +2,14 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 const BASE_URL = 'https://voita-backend.fly.dev/api/v1/maps';
 
+export interface RouteStep {
+  instruction: string;
+  distance: string;
+  duration: string;
+  startLocation: { lat: number; lng: number };
+  maneuver?: string;
+}
+
 /* ........... Petrol Stations ............ */
 
 export const fetchPetrolStations = createAsyncThunk(
@@ -139,7 +147,15 @@ export const fetchSafeRoute = createAsyncThunk(
     const directionsData = await directionsRes.json();
     console.log('🛡 SAFE ROUTE directions:', directionsData);
 
-    if (!directionsData.routes?.length) return [];
+    if (!directionsData.routes?.length) {
+      return {
+        coords: [],
+        distance: null,
+        duration: null,
+        safetyInsights: null,
+        steps: [],
+      };
+    }
 
     /* ─── Step 3: Straight-line distance for detour tolerance ─── */
 
@@ -321,11 +337,20 @@ export const fetchSafeRoute = createAsyncThunk(
       detourRatio: bestInsights.detourRatio ?? null,
     };
 
+    const steps: RouteStep[] = bestRoute.legs[0].steps.map((s: any) => ({
+      instruction: s.html_instructions.replace(/<[^>]*>/g, ''),
+      distance: s.distance?.text ?? '',
+      duration: s.duration?.text ?? '',
+      startLocation: s.start_location,
+      maneuver: s.maneuver ?? null,
+    }));
+
     return {
       coords,
       distance: leg.distance?.text ?? null,
       duration: leg.duration?.text ?? null,
       safetyInsights,
+      steps,
     };
   },
 );
@@ -412,10 +437,19 @@ export const fetchNormalRoute = createAsyncThunk(
       return points;
     };
 
+    const steps: RouteStep[] = leg.steps.map((s: any) => ({
+      instruction: s.html_instructions.replace(/<[^>]*>/g, ''),
+      distance: s.distance?.text ?? '',
+      duration: s.duration?.text ?? '',
+      startLocation: s.start_location,
+      maneuver: s.maneuver ?? null,
+    }));
+
     return {
       coords: decodePolyline(encoded),
       distance: leg.distance?.text || null,
       duration: leg.duration?.text || null,
+      steps,
     };
   },
 );
@@ -492,6 +526,7 @@ const mapsSlice = createSlice({
     // ROUTES
     safeRouteCoords: [] as any[],
     normalRouteCoords: [] as any[],
+    steps: [] as RouteStep[],
 
     // DESTINATION
     destination: null as null | {
@@ -533,7 +568,12 @@ const mapsSlice = createSlice({
       state.places = [];
       state.safeRouteCoords = [];
       state.normalRouteCoords = [];
-      state.safeRouteInfo = { distance: null, duration: null };
+      state.steps = [];
+      state.safeRouteInfo = {
+        distance: null,
+        duration: null,
+        safetyInsights: null,
+      };
       state.normalRouteInfo = { distance: null, duration: null };
       state.error = null;
     },
@@ -543,7 +583,12 @@ const mapsSlice = createSlice({
       state.destination = action.payload;
       state.safeRouteCoords = [];
       state.normalRouteCoords = [];
-      state.safeRouteInfo = { distance: null, duration: null };
+      state.steps = [];
+      state.safeRouteInfo = {
+        distance: null,
+        duration: null,
+        safetyInsights: null,
+      };
       state.normalRouteInfo = { distance: null, duration: null };
       state.places = [];
       state.error = null;
@@ -577,30 +622,25 @@ const mapsSlice = createSlice({
 
       .addCase(fetchSafeRoute.fulfilled, (state, action) => {
         state.loading = false;
-
         state.safeRouteCoords = action.payload.coords || [];
-
+        state.steps = action.payload.steps || [];
         state.safeRouteInfo = {
           distance: action.payload.distance,
           duration: action.payload.duration,
           safetyInsights: action.payload.safetyInsights || null,
         };
-
-        state.places = [];
       })
 
       /* ........ NORMAL ROUTE ........ */
 
       .addCase(fetchNormalRoute.fulfilled, (state, action) => {
         state.loading = false;
-
         state.normalRouteCoords = action.payload.coords || [];
-
+        state.steps = action.payload.steps || [];
         state.normalRouteInfo = {
           distance: action.payload.distance,
           duration: action.payload.duration,
         };
-        state.places = [];
       })
 
       /* ........ FLOOD ALERTS ........ */

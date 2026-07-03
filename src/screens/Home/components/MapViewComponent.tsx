@@ -16,6 +16,7 @@ interface Props {
     text?: string;
   };
   showCameras?: boolean;
+  currentStepLocation?: { lat: number; lng: number } | null;
 }
 
 export default function MapViewComponent({
@@ -25,8 +26,10 @@ export default function MapViewComponent({
   normalRouteCoords,
   destination,
   showCameras = false,
+  currentStepLocation = null,
 }: Props) {
   const mapRef = useRef<MapView | null>(null);
+  const isNavigating = useRef(false);
 
   const { isNight } = useDayNight(location?.latitude, location?.longitude);
   const mapStyle = isNight ? NIGHT_MAP_STYLE : DAY_MAP_STYLE;
@@ -40,13 +43,6 @@ export default function MapViewComponent({
       longitudeDelta: 0.005,
     };
   }, [location?.latitude, location?.longitude]);
-
-  /* Camera Follow User */
-  useEffect(() => {
-    if (!location?.latitude || !location?.longitude) return;
-
-    mapRef.current?.animateToRegion(region, 1000);
-  }, [location?.latitude, location?.longitude, region]);
 
   /* Destination Validation */
   const hasValidDestination =
@@ -86,9 +82,20 @@ export default function MapViewComponent({
   /* Active Route */
   const routeToFit = safeRoute.length > 0 ? safeRoute : normalRoute;
 
-  /* Auto-Zoom To Route */
+  /* Detect when user starts moving — switch from overview to follow mode */
+  useEffect(() => {
+    if (!location?.latitude || !location?.longitude) return;
+    if (routeToFit.length === 0) return;
+
+    isNavigating.current = true;
+  }, [location?.latitude, location?.longitude]);
+
+  /* Fit route overview — only on first route load, not on location updates */
   useEffect(() => {
     if (!routeToFit.length) return;
+
+    // Reset navigation state when a new route loads
+    isNavigating.current = false;
 
     const timeout = setTimeout(() => {
       mapRef.current?.fitToCoordinates(routeToFit, {
@@ -103,7 +110,39 @@ export default function MapViewComponent({
     }, 500);
 
     return () => clearTimeout(timeout);
-  }, [routeToFit, destination]);
+  }, [routeToFit]);
+
+  /* Follow user during navigation */
+  useEffect(() => {
+    if (!location?.latitude || !location?.longitude) return;
+    if (!isNavigating.current) return;
+
+    if (currentStepLocation) {
+      // Bias camera midpoint between user and next step
+      const midLat = (location.latitude + currentStepLocation.lat) / 2;
+      const midLng = (location.longitude + currentStepLocation.lng) / 2;
+
+      mapRef.current?.animateToRegion(
+        {
+          latitude: midLat,
+          longitude: midLng,
+          latitudeDelta: 0.008,
+          longitudeDelta: 0.008,
+        },
+        800,
+      );
+    } else {
+      mapRef.current?.animateToRegion(
+        {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          latitudeDelta: 0.005,
+          longitudeDelta: 0.005,
+        },
+        1000,
+      );
+    }
+  }, [location?.latitude, location?.longitude, currentStepLocation]);
 
   /* Conditional Render (After Hooks) */
   if (!location?.latitude || !location?.longitude) return null;
@@ -173,6 +212,7 @@ export default function MapViewComponent({
                 : 'Speed camera'
             }
             anchor={{ x: 0.5, y: 0.5 }}
+            tracksViewChanges={false}
           >
             <View style={styles.cameraMarker}>
               <Text style={styles.cameraMarkerSpeed}>
@@ -183,7 +223,6 @@ export default function MapViewComponent({
         ))}
 
       {/* Routes */}
-
       {safeRoute.length > 0 ? (
         <Polyline
           coordinates={safeRoute}

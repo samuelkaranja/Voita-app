@@ -24,6 +24,11 @@ apply plugin: "com.facebook.react.rootproject"
 
 // ADD THIS BLOCK AT THE VERY BOTTOM:
 allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jcenter.bintray.com' }
+    }
     configurations.all {
         resolutionStrategy {
             force "com.google.android.gms:play-services-location:$rootProject.ext.playServicesLocationVersion"

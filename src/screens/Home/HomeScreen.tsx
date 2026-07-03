@@ -24,12 +24,18 @@ import {
   fetchFloodAlerts,
   fetchCongestionAlerts,
   clearMapData,
+  setDestination,
 } from '../../redux/slices/map/mapsSlice';
 
 import { useLocation } from '../../hooks/useLocation';
 import { useDayNight } from '../../hooks/useDayNight';
-
 import { useSpeedCameraAlert } from '../../hooks/useSpeedCameraAlert';
+import { useRouteCache } from '../../hooks/useRouteCache';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+
+import { useTurnByTurn } from '../../hooks/useTurnByTurn';
+import { useVoiceGuide } from '../../hooks/useVoiceGuide';
+import TurnByTurnBanner from './components/TurnByTurnBanner';
 
 /* ........ Types ........ */
 
@@ -56,12 +62,14 @@ export default function HomeScreen() {
     safeRouteInfo,
     floodAlerts,
     congestionAlerts,
+    steps,
   } = useSelector((state: any) => state.maps);
 
   const destination = useSelector((state: any) => state.maps.destination);
 
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [alertsExpanded, setAlertsExpanded] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Flood and Congestion Alerts
   const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([]);
@@ -107,6 +115,29 @@ export default function HomeScreen() {
 
   const showCameras = selectedTag === 'Speed Cameras';
 
+  const {
+    currentStep,
+    nextStep,
+    currentStepIndex,
+    totalSteps,
+    isLastStep,
+    hasSteps,
+    distanceToNextMeters,
+  } = useTurnByTurn(
+    steps,
+    location?.coords?.latitude,
+    location?.coords?.longitude,
+  );
+
+  useVoiceGuide(
+    isNavigating ? currentStep : null,
+    isNavigating ? nextStep : null,
+    currentStepIndex,
+    isNavigating ? distanceToNextMeters : null,
+    isLastStep,
+    isNavigating && hasSteps,
+  );
+
   const safety = safeRouteInfo?.safetyInsights;
 
   const distance = isSafeRouteActive
@@ -119,6 +150,10 @@ export default function HomeScreen() {
 
   const [initialLocation, setInitialLocation] = useState<any>(null);
 
+  const userPhone = useSelector((state: any) => state.auth.user?.phone);
+  const { isOnline } = useNetworkStatus();
+  const { saveCache, loadCache } = useRouteCache(userPhone);
+
   /* Initial Location */
   useEffect(() => {
     if (location?.coords && !initialLocation) {
@@ -128,6 +163,48 @@ export default function HomeScreen() {
       });
     }
   }, [location, initialLocation]);
+
+  // Restore cached route on cold start when offline
+  useEffect(() => {
+    if (isOnline) return;
+    if (normalRouteCoords.length > 0) return; // already have a route
+
+    loadCache().then(cached => {
+      if (!cached) return;
+
+      dispatch(setDestination(cached.destination));
+      dispatch({
+        type: 'maps/fetchNormalRoute/fulfilled',
+        payload: {
+          coords: cached.normalRouteCoords,
+          distance: cached.normalRouteInfo.distance,
+          duration: cached.normalRouteInfo.duration,
+        },
+      });
+
+      Toast.show({
+        type: 'info',
+        text1: '📦 Offline mode',
+        text2: `Showing cached route to ${cached.destination.text}`,
+      });
+    });
+  }, [isOnline]);
+
+  // Save route to cache whenever a new normal route is fetched
+  useEffect(() => {
+    if (!destination) return;
+    if (normalRouteCoords.length === 0) return;
+    if (!normalRouteInfo.distance) return;
+
+    saveCache({
+      destination,
+      normalRouteCoords,
+      normalRouteInfo: {
+        distance: normalRouteInfo.distance,
+        duration: normalRouteInfo.duration,
+      },
+    });
+  }, [normalRouteCoords]);
 
   /* Reset tag on new destination */
   useEffect(() => {
@@ -140,6 +217,7 @@ export default function HomeScreen() {
     prevDestinationRef.current = destinationKey;
 
     setSelectedTag(null);
+    setIsNavigating(false);
   }, [destination]);
 
   const speed = location?.coords?.speed ?? 0;
@@ -168,7 +246,13 @@ export default function HomeScreen() {
         destination_lng: destination.longitude,
       }),
     );
-  }, [destination, location, selectedTag, safeRouteCoords, dispatch]);
+  }, [
+    destination?.latitude,
+    destination?.longitude,
+    selectedTag,
+    safeRouteCoords.length,
+    dispatch,
+  ]);
 
   /* Fetch dynamic alerts on location change */
   useEffect(() => {
@@ -313,6 +397,7 @@ export default function HomeScreen() {
             normalRouteCoords={normalRouteCoords}
             destination={destination}
             showCameras={showCameras}
+            currentStepLocation={currentStep?.startLocation ?? null}
           />
         ) : (
           <View style={styles.centerFull}>
@@ -333,6 +418,15 @@ export default function HomeScreen() {
               onSelect={handleTagSelect}
             />
           </View>
+
+          {/* Offline banner */}
+          {!isOnline && (
+            <View style={styles.offlineBanner}>
+              <Text style={styles.offlineBannerText}>
+                📡 No connection · Showing cached route
+              </Text>
+            </View>
+          )}
 
           {/* Night badge */}
           {isNight && (
@@ -360,6 +454,29 @@ export default function HomeScreen() {
                 🛡 Safe Route Active · Tap for details
               </Text>
             </TouchableOpacity>
+          )}
+
+          {/* Start Navigation button — shown when route is ready but not yet navigating */}
+          {hasSteps && !isNavigating && (
+            <TouchableOpacity
+              style={styles.startNavButton}
+              onPress={() => setIsNavigating(true)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.startNavButtonText}>▶ Start Navigation</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Turn-by-turn banner — shown only during active navigation */}
+          {hasSteps && isNavigating && currentStep && (
+            <TurnByTurnBanner
+              currentStep={currentStep}
+              nextStep={nextStep}
+              distanceToNextMeters={distanceToNextMeters}
+              currentStepIndex={currentStepIndex}
+              totalSteps={totalSteps}
+              isLastStep={isLastStep}
+            />
           )}
         </View>
       )}
@@ -770,5 +887,37 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 16,
     textAlign: 'center',
+  },
+  offlineBanner: {
+    marginTop: 8,
+    alignSelf: 'center',
+    backgroundColor: '#37474F',
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+  },
+  offlineBannerText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  startNavButton: {
+    marginTop: 10,
+    alignSelf: 'center',
+    backgroundColor: '#0d2b1f',
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  startNavButtonText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#8ff6d0',
+    letterSpacing: 0.5,
   },
 });

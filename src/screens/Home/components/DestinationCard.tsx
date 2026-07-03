@@ -14,6 +14,7 @@ import { Navigation } from 'lucide-react-native';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { setDestination } from '../../../redux/slices/map/mapsSlice';
+import { store } from '../../../redux/store';
 
 const GOOGLE_KEY = 'AIzaSyDAaZnQ6p4Zase38K03Rk8LbCyGlfmaUCg';
 
@@ -95,7 +96,6 @@ export default function DestinationCard({ style }: { style?: any }) {
       );
 
       const data = await res.json();
-
       const location = data?.result?.geometry?.location;
 
       if (!location) {
@@ -107,13 +107,21 @@ export default function DestinationCard({ style }: { style?: any }) {
         return;
       }
 
-      dispatch(
-        setDestination({
-          text: place.description,
-          latitude: location.lat,
-          longitude: location.lng,
-        }),
-      );
+      // Read current destination from Redux to avoid re-dispatching same place
+      const currentDestination = store.getState().maps.destination;
+      const isSameDestination =
+        currentDestination?.latitude === location.lat &&
+        currentDestination?.longitude === location.lng;
+
+      if (!isSameDestination) {
+        dispatch(
+          setDestination({
+            text: place.description,
+            latitude: location.lat,
+            longitude: location.lng,
+          }),
+        );
+      }
 
       const newEntry = {
         place_id: place.place_id,
