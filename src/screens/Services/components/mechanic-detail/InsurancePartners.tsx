@@ -1,15 +1,33 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { Shield } from 'lucide-react-native';
+import { InsurancePartner } from '../../../../redux/slices/services/mechanicsSlice';
 
-export const InsurancePartners: React.FC = () => {
+interface InsurancePartnersProps {
+  partners: InsurancePartner[];
+}
+
+export const InsurancePartners: React.FC<InsurancePartnersProps> = ({
+  partners,
+}) => {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>INSURANCE PARTNERS</Text>
       <View style={styles.grid}>
-        {Array.from({ length: 4 }).map((_, i) => (
-          <View key={i} style={styles.logoBox}>
-            <Shield size={22} color="#D1D5DB" strokeWidth={1.5} />
+        {partners.map(partner => (
+          <View key={partner.id} style={styles.logoBox}>
+            {partner.logo_url ? (
+              <Image
+                source={{ uri: partner.logo_url }}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            ) : (
+              <Shield size={22} color="#10B981" strokeWidth={1.5} />
+            )}
+            <Text style={styles.partnerName} numberOfLines={2}>
+              {partner.name}
+            </Text>
           </View>
         ))}
       </View>
@@ -42,12 +60,25 @@ const styles = StyleSheet.create({
   },
   logoBox: {
     width: '47%',
-    height: 56,
+    minHeight: 72,
     backgroundColor: '#F9FAFB',
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    gap: 6,
+  },
+  logo: {
+    width: '80%',
+    height: 36,
+  },
+  partnerName: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#374151',
+    textAlign: 'center',
   },
 });

@@ -43,7 +43,7 @@ export const ScoutProfileHero: React.FC<ScoutProfileHeroProps> = ({
           <ArrowLeft size={20} color="#111827" strokeWidth={2.5} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Scout Profile</Text>
+        {/* <Text style={styles.headerTitle}>Scout Profile</Text>
 
         <View style={styles.headerRight}>
           <TouchableOpacity
@@ -58,7 +58,7 @@ export const ScoutProfileHero: React.FC<ScoutProfileHeroProps> = ({
           ) : (
             <View style={styles.avatarPlaceholder} />
           )}
-        </View>
+        </View> */}
       </View>
 
       {/* Verified badge */}

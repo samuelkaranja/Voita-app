@@ -49,11 +49,6 @@ const CATEGORIES: CategoryItem[] = [
   { id: 'carwash', label: 'Car Wash', Icon: Droplets },
   { id: 'towing', label: 'Towing', Icon: Truck },
   { id: 'scouts', label: 'Scout', Icon: UserRound },
-  // { id: 'paint', label: 'Paint Jobs', Icon: PaintBucket },
-  // { id: 'upholstery', label: 'Upholstery', Icon: Armchair },
-  // { id: 'specialists', label: 'Specialists', Icon: Stethoscope },
-  // { id: 'dealers', label: 'Dealers', Icon: Car },
-  // { id: 'driving', label: 'Driving School', Icon: GraduationCap },
 ];
 
 const TOP_SPECIALISTS: SpecialistItem[] = [
@@ -149,7 +144,7 @@ export default function ServicesScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <SearchBar value={search} onChangeText={setSearch} />
+        {/* <SearchBar value={search} onChangeText={setSearch} /> */}
 
         {/* <FilterChips
           filters={filters}
@@ -173,12 +168,8 @@ export default function ServicesScreen() {
           </ScrollView>
         </View>
 
-        <View style={styles.section}>
-          <SectionHeader
-            title="Top Rated Specialists"
-            actionLabel="See All"
-            onAction={() => {}}
-          />
+        <View style={styles.specialistSection}>
+          <SectionHeader title="Top Rated Specialists" />
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -216,6 +207,7 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: '#F3F4F6',
+    paddingBottom: 20,
   },
   scroll: {
     flex: 1,
@@ -228,9 +220,14 @@ const styles = StyleSheet.create({
   section: {
     gap: 14,
   },
+  specialistSection: {
+    gap: 14,
+    marginHorizontal: -16,
+    paddingLeft: 16,
+  },
   rowGap: {
     gap: 10,
-    paddingRight: 4,
+    paddingRight: 20,
     paddingVertical: 5,
   },
   nearbyList: {

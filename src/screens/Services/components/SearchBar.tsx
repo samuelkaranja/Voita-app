@@ -6,12 +6,16 @@ interface SearchBarProps {
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
+  onSubmitEditing?: () => void;
+  returnKeyType?: 'search' | 'done' | 'go' | 'next' | 'send';
 }
 
 export const SearchBar: React.FC<SearchBarProps> = ({
   value,
   onChangeText,
   placeholder = 'Search services, e.g. mechanic...',
+  onSubmitEditing,
+  returnKeyType = 'search',
 }) => {
   return (
     <View style={styles.container}>
@@ -22,6 +26,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor="#9CA3AF"
+        onSubmitEditing={onSubmitEditing}
+        returnKeyType={returnKeyType}
       />
     </View>
   );

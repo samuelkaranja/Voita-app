@@ -1,5 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import ExploreScreen from '../screens/Services/ExploreScreen';
 import ServicesScreen from '../screens/Services/ServicesScreen';
 import MechanicsScreen from '../screens/Services/MechanicsScreen';
 import TowingScreen from '../screens/Services/TowingScreen';
@@ -12,6 +13,7 @@ import ScoutsScreen from '../screens/Services/ScoutsScreen';
 import ScoutProfileScreen from '../screens/Services/ScoutProfileScreen';
 
 export type ServicesStackParamList = {
+  ExploreScreen: undefined;
   ServicesMain: undefined;
   MechanicsScreen: undefined;
   MechanicDetail: { mechanicId: string };
@@ -28,6 +30,11 @@ const Stack = createNativeStackNavigator<ServicesStackParamList>();
 export default function ServicesStack() {
   return (
     <Stack.Navigator>
+      <Stack.Screen
+        name="ExploreScreen"
+        component={ExploreScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen
         name="ServicesMain"
         component={ServicesScreen}

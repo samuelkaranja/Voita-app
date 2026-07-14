@@ -12,19 +12,18 @@ export default function ServicesHeader() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#001810',
+    backgroundColor: '#ffffff',
     paddingHorizontal: 20,
     paddingVertical: 14,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: 2,
-    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: '500',
+    color: '#000000',
   },
   subtitle: {
     fontSize: 12,
-    color: '#cfe7dd',
+    color: '#000000',
     marginTop: 4,
   },
 });

@@ -15,7 +15,7 @@ export const OnlineIndicator: React.FC<OnlineIndicatorProps> = ({
       <Text style={styles.label}>{label}</Text>
       <View style={styles.badge}>
         <View style={styles.dot} />
-        <Text style={styles.count}>{count} Experts Online</Text>
+        <Text style={styles.count}>{count} Experts Available</Text>
       </View>
     </View>
   );
@@ -26,6 +26,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: 8,
   },
   label: {
     fontSize: 15,

@@ -1,19 +1,30 @@
-import React, { useState } from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  Text,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Truck, FileText } from 'lucide-react-native';
-
-import { ScoutHeroBanner } from './components/scouts/ScoutHeroBanner';
-import { ScoutCard, ScoutItem } from './components/scouts/ScoutCard';
-import { OnlineIndicator } from './components/scouts/OnlineIndicator';
-import { MissionItem, MissionEntry } from './components/scouts/MissionItem';
-import { SectionHeader } from './components/SectionHeader';
-import { MapFAB } from './components/MapFAB';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ServicesStackParamList } from '../../navigation/ServicesStack';
+import {
+  fetchScouts,
+  fetchUserMissions,
+  clearErrors,
+} from '../../redux/slices/services/scoutsSlice';
 
-// Data
+import { ScreenHeader } from './components/ScreenHeader';
+import { ScoutHeroBanner } from './components/scouts/ScoutHeroBanner';
+import { ScoutCard } from './components/scouts/ScoutCard';
+import { OnlineIndicator } from './components/scouts/OnlineIndicator';
+import { MissionItem } from './components/scouts/MissionItem';
+import { SectionHeader } from './components/SectionHeader';
+import { MapFAB } from './components/MapFAB';
+import { Truck, FileText } from 'lucide-react-native';
+import { useAppDispatch, useAppSelector } from '../../redux/hooks';
 
 const SCOUT_FILTERS = [
   { id: 'all', label: 'ALL SCOUTS' },
@@ -22,90 +33,46 @@ const SCOUT_FILTERS = [
   { id: 'valet', label: 'VALET' },
 ];
 
-const SCOUTS: ScoutItem[] = [
-  {
-    id: 'sc1',
-    name: 'Marcus Vance',
-    role: '1,240 Missions Completed',
-    rating: 4.9,
-    avatarUri:
-      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80',
-    tags: ['PRO DRIVER', 'VALET EXPERT'],
-    bio: 'Ex-police officer specialized in secure vehicle transport and long-distance scout driving....',
-    ctaType: 'book',
-  },
-  {
-    id: 'sc2',
-    name: 'Elena Rodriguez',
-    role: 'Expert Quote Auditor',
-    rating: 5.0,
-    avatarUri:
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
-    tags: ['PRICE AUDITOR', 'MECH CONSULTANT'],
-    bio: 'Former service advisor with 15 years experience. I ensure you never pay for...',
-    ctaType: 'request',
-  },
-  {
-    id: 'sc3',
-    name: 'Julian K.',
-    role: 'Premium Valet Specialist',
-    rating: 4.8,
-    avatarUri:
-      'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&q=80',
-    tags: ['VALET EXPERT', 'PRO DRIVER'],
-    bio: 'Managing high-end vehicle logistics. GPS-tracked delivery and full detailed reports for...',
-    ctaType: 'schedule',
-  },
-];
-
-const MISSIONS: MissionEntry[] = [
-  {
-    id: 'm1',
-    title: 'Valet with Julian K.',
-    subtitle: 'BMW X5 Service',
-    detail: 'In Transit',
-    status: 'active',
-    costOrStatus: 'ACTIVE NOW',
-    Icon: Truck,
-    iconBgColor: '#ECFDF5',
-    iconColor: '#10B981',
-  },
-  {
-    id: 'm2',
-    title: 'Audit by Elena R.',
-    subtitle: 'Brake System Review',
-    detail: 'Completed Oct 08',
-    status: 'completed',
-    costOrStatus: '-$120',
-    Icon: FileText,
-    iconBgColor: '#EFF6FF',
-    iconColor: '#3B82F6',
-  },
-];
-
-// ── Screen ────────────────────────────────────────────────────────────────────
+// Map icon strings from missions API to Lucide components
+const MISSION_ICON_MAP: Record<string, any> = {
+  truck: Truck,
+  'file-text': FileText,
+  default: Truck,
+};
 
 export default function ScoutsScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<ServicesStackParamList>>();
+  const dispatch = useAppDispatch();
+
+  const { list, missions, listLoading, missionsLoading, listError } =
+    useAppSelector(s => s.scouts);
+  const token = useAppSelector(s => s.auth?.token);
+
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
 
-  const filteredScouts = SCOUTS.filter(s => {
-    const matchesSearch =
-      search.trim() === '' ||
-      s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.tags.some(t => t.toLowerCase().includes(search.toLowerCase()));
+  useEffect(() => {
+    dispatch(fetchScouts({ category: activeFilter }));
+    if (token) dispatch(fetchUserMissions(token));
+    return () => {
+      dispatch(clearErrors());
+    };
+  }, [activeFilter]);
 
-    const matchesFilter =
-      activeFilter === 'all' ||
-      s.tags.some(t => t.toLowerCase().includes(activeFilter.toLowerCase()));
-
-    return matchesSearch && matchesFilter;
+  // Client-side search on top of API
+  const filteredScouts = list.filter(s => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      s.name.toLowerCase().includes(q) ||
+      s.tags.some(t => t.toLowerCase().includes(q))
+    );
   });
 
   return (
     <SafeAreaView style={styles.safe}>
+      <ScreenHeader title="Scouts" />
       <FlatList
         data={filteredScouts}
         keyExtractor={item => item.id}
@@ -120,32 +87,70 @@ export default function ScoutsScreen() {
               activeFilter={activeFilter}
               onFilterPress={setActiveFilter}
             />
-            <OnlineIndicator label="Verified Scouts Available Now" count={24} />
+            <OnlineIndicator
+              label="Verified Scouts Available Now"
+              count={filteredScouts.length}
+            />
           </View>
         }
         renderItem={({ item }) => (
           <ScoutCard
-            item={item}
+            item={{
+              id: item.id,
+              name: item.name,
+              role: item.role,
+              rating: item.rating,
+              missionsCompleted: item.missions_completed,
+              avatarUri: item.avatar_url ?? '',
+              tags: item.tags,
+              bio: item.bio,
+              ctaType: item.cta_type,
+              accentColor: item.accent_color ?? '#10B981',
+            }}
             onPress={id => navigation.navigate('ScoutProfile', { scoutId: id })}
           />
         )}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-        ListFooterComponent={
-          <View style={styles.footer}>
-            <SectionHeader
-              title="Your Recent Missions"
-              actionLabel="Full History ›"
-              onAction={() => {}}
+        ListEmptyComponent={
+          listLoading ? (
+            <ActivityIndicator
+              style={styles.loader}
+              color="#10B981"
+              size="large"
             />
-            <View style={styles.missionsCard}>
-              {MISSIONS.map((m, i) => (
-                <View key={m.id}>
-                  <MissionItem item={m} />
-                  {i < MISSIONS.length - 1 && <View style={styles.divider} />}
-                </View>
-              ))}
+          ) : listError ? (
+            <Text style={styles.errorText}>{listError}</Text>
+          ) : (
+            <Text style={styles.emptyText}>No scouts found.</Text>
+          )
+        }
+        ListFooterComponent={
+          missions.length > 0 ? (
+            <View style={styles.footer}>
+              <SectionHeader title="Your Recent Missions" />
+              <View style={styles.missionsCard}>
+                {missions.map((m, i) => (
+                  <View key={m.id}>
+                    <MissionItem
+                      item={{
+                        id: m.id,
+                        title: m.title,
+                        subtitle: m.subtitle,
+                        detail: m.detail,
+                        status: m.status,
+                        costOrStatus: m.cost_or_status,
+                        Icon:
+                          MISSION_ICON_MAP[m.icon] ?? MISSION_ICON_MAP.default,
+                        iconBgColor: m.icon_bg_color,
+                        iconColor: m.icon_color,
+                      }}
+                    />
+                    {i < missions.length - 1 && <View style={styles.divider} />}
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
+          ) : null
         }
       />
       <MapFAB onPress={() => {}} />
@@ -154,23 +159,22 @@ export default function ScoutsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
+  safe: { flex: 1, backgroundColor: '#F3F4F6', paddingBottom: 70 },
+  list: { paddingHorizontal: 16, paddingBottom: 40 },
+  header: { paddingTop: 8, paddingBottom: 8, gap: 16 },
+  footer: { paddingTop: 20, gap: 12, paddingBottom: 60 },
+  loader: { marginTop: 48 },
+  errorText: {
+    textAlign: 'center',
+    marginTop: 48,
+    color: '#EF4444',
+    fontSize: 14,
   },
-  list: {
-    paddingHorizontal: 16,
-    paddingBottom: 40,
-  },
-  header: {
-    paddingTop: 16,
-    paddingBottom: 8,
-    gap: 16,
-  },
-  footer: {
-    paddingTop: 20,
-    gap: 12,
-    paddingBottom: 60,
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 48,
+    color: '#9CA3AF',
+    fontSize: 14,
   },
   missionsCard: {
     backgroundColor: '#FFFFFF',
@@ -182,8 +186,5 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#F3F4F6',
-  },
+  divider: { height: 1, backgroundColor: '#F3F4F6' },
 });

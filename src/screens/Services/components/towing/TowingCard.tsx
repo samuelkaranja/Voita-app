@@ -114,14 +114,14 @@ export const TowingCard: React.FC<TowingCardProps> = ({
           <Text style={styles.detailsText}>Details</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={[styles.callButton, isBusy && styles.callButtonBusy]}
           onPress={() => onCall(item.id)}
           activeOpacity={0.8}
         >
           <Phone size={15} color="#FFFFFF" strokeWidth={2.5} fill="#FFFFFF" />
           <Text style={styles.callText}>Call Now</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </View>
   );
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F3F4F6',
     borderRadius: 9,
-    paddingVertical: 12,
+    paddingVertical: 10,
     alignItems: 'center',
   },
   detailsText: {

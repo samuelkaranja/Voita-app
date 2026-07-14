@@ -1,79 +1,78 @@
-import React, { useState } from 'react';
-import { View, ScrollView, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  ScrollView,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Cpu, Wrench, Disc, Droplets } from 'lucide-react-native';
+import { useRoute, RouteProp } from '@react-navigation/native';
+import { Cpu, Wrench, Disc, Droplets, HelpCircle } from 'lucide-react-native';
+import { LucideIcon } from 'lucide-react-native';
+
+import type { ServicesStackParamList } from '../../navigation/ServicesStack';
+//import { useAppDispatch, useAppSelector } from '../../store/store';
+import {
+  fetchMechanicDetail,
+  clearDetail,
+  MechanicService,
+} from '../../redux/slices/services//mechanicsSlice';
 
 import { DetailHero } from './components/mechanic-detail/DetailHero';
 import { DetailSummary } from './components/mechanic-detail/DetailSummary';
 import { AboutSection } from './components/mechanic-detail/AboutSection';
-import {
-  ServiceItem,
-  ServiceEntry,
-} from './components/mechanic-detail/ServiceItem';
-import {
-  ReviewCard,
-  ReviewEntry,
-} from './components/mechanic-detail/ReviewCard';
+import { ServiceItem } from './components/mechanic-detail/ServiceItem';
 import { InsurancePartners } from './components/mechanic-detail/InsurancePartners';
-import { MapPreview } from './components/mechanic-detail/MapPreview';
 import { DetailBottomBar } from './components/mechanic-detail/DetailBottomBar';
 import { SectionHeader } from './components/SectionHeader';
-
-import { useRoute } from '@react-navigation/native';
-import type { RouteProp } from '@react-navigation/native';
-import type { ServicesStackParamList } from '../../navigation/ServicesStack';
+import { useAppDispatch, useAppSelector } from '../../redux/hooks';
 
 type DetailRoute = RouteProp<ServicesStackParamList, 'MechanicDetail'>;
 
-// ── Static data (replace with route.params / API call) ────────────────────────
-
-const SERVICES: ServiceEntry[] = [
-  {
-    id: 's1',
-    label: 'Full Diagnostics',
-    description: 'Comprehensive scanning of all electronic control units.',
-    Icon: Cpu,
-    highlighted: true,
-  },
-  {
-    id: 's2',
-    label: 'Engine Overhaul',
-    description: 'Complete restoration and performance re-calibration.',
-    Icon: Wrench,
-  },
-  {
-    id: 's3',
-    label: 'Brake Service',
-    description: 'OEM performance pad and disc replacement.',
-    Icon: Disc,
-  },
-  {
-    id: 's4',
-    label: 'Oil Change',
-    description: 'High-grade synthetic fluids with genuine filters.',
-    Icon: Droplets,
-  },
-];
-
-const REVIEWS: ReviewEntry[] = [
-  {
-    id: 'r1',
-    initials: 'MK',
-    avatarColor: '#6366F1',
-    name: 'Marcus K.',
-    daysAgo: 2,
-    rating: 5,
-    quote:
-      'The precision tuning they did on my M4 is incredible. Feels like a different car. Highly professional environment.',
-  },
-];
-
-// Screen
+// Map icon_key strings from the API to Lucide components
+const ICON_MAP: Record<string, LucideIcon> = {
+  cpu: Cpu,
+  wrench: Wrench,
+  disc: Disc,
+  droplets: Droplets,
+};
+const fallbackIcon: LucideIcon = HelpCircle;
 
 export default function MechanicDetailScreen() {
   const route = useRoute<DetailRoute>();
   const { mechanicId } = route.params;
+
+  const dispatch = useAppDispatch();
+  const { detail, detailLoading, detailError } = useAppSelector(
+    s => s.mechanics,
+  );
   const [favourited, setFavourited] = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchMechanicDetail(mechanicId));
+    return () => {
+      dispatch(clearDetail());
+    };
+  }, [mechanicId]);
+
+  if (detailLoading) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <ActivityIndicator color="#10B981" size="large" />
+      </SafeAreaView>
+    );
+  }
+
+  if (detailError || !detail) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <Text style={styles.errorText}>
+          {detailError ?? 'Mechanic not found.'}
+        </Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
@@ -83,8 +82,8 @@ export default function MechanicDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         <DetailHero
-          imageUri="https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80"
-          verified
+          imageUri={detail.image_url}
+          verified={detail.verified}
           isFavourited={favourited}
           onShare={() => {}}
           onFavourite={() => setFavourited(f => !f)}
@@ -92,39 +91,47 @@ export default function MechanicDetailScreen() {
 
         <View style={styles.body}>
           <DetailSummary
-            name="Elite Precision Motors"
-            rating={4.9}
-            reviewCount={1200}
-            address="1.2 miles away • 456 Tech Drive, Sector 7"
-            availability="Open Now"
-            specialty="Engine Tuning"
+            name={detail.name}
+            rating={detail.rating}
+            reviewCount={detail.review_count}
+            address={detail.address}
+            availability={detail.availability ? 'Open Now' : 'Closed'}
+            specialty={detail.specialties?.[0] ?? 'General'}
           />
 
-          <AboutSection text="At Elite Precision Motors, we specialise in high-performance maintenance for premium vehicles. With a focus on BMW diagnostics and bespoke engine tuning, our master technicians utilise factory-grade tools to ensure your machine operates at its peak potential. We bridge the gap between technical mastery and urban convenience." />
+          {detail.description ? (
+            <AboutSection text={detail.description} />
+          ) : null}
 
-          {/* Specialised Services */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Specialized Services</Text>
-            {SERVICES.map(svc => (
-              <ServiceItem key={svc.id} item={svc} />
-            ))}
-          </View>
+          {detail.services.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Specialized Services</Text>
+              {detail.services.map(
+                (svc: {
+                  id: React.Key | null | undefined;
+                  label: any;
+                  description: any;
+                  icon: string | number;
+                  highlighted: any;
+                }) => (
+                  <ServiceItem
+                    key={svc.id}
+                    item={{
+                      id: String(svc.id),
+                      label: svc.label,
+                      description: svc.description,
+                      Icon: ICON_MAP[svc.icon] ?? fallbackIcon,
+                      highlighted: svc.highlighted,
+                    }}
+                  />
+                ),
+              )}
+            </View>
+          )}
 
-          {/* Client Reviews */}
-          <View style={styles.section}>
-            <SectionHeader
-              title="Client Reviews"
-              actionLabel="SEE ALL"
-              onAction={() => {}}
-            />
-            {REVIEWS.map(r => (
-              <ReviewCard key={r.id} item={r} />
-            ))}
-          </View>
-
-          <InsurancePartners />
-
-          <MapPreview onGetDirections={() => {}} />
+          {detail.insurance_partners.length > 0 && (
+            <InsurancePartners partners={detail.insurance_partners} />
+          )}
         </View>
       </ScrollView>
 
@@ -138,27 +145,22 @@ export default function MechanicDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
+  safe: { flex: 1, backgroundColor: '#F3F4F6', paddingBottom: 70 },
+  centered: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#F3F4F6',
   },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingBottom: 16,
-  },
-  body: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    gap: 14,
-  },
-  section: {
-    gap: 10,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#111827',
+  scroll: { flex: 1 },
+  content: { paddingBottom: 16 },
+  body: { paddingHorizontal: 16, paddingTop: 14, gap: 14 },
+  section: { gap: 10 },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 24,
   },
 });

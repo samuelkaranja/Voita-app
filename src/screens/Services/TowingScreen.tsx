@@ -1,20 +1,29 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   FlatList,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
+  ActivityIndicator,
+  Text,
 } from 'react-native';
-
-import { FilterChips, FilterChip } from './components/FilterChips';
-import { MapFAB } from './components/MapFAB';
-import { EmergencyBanner } from './components/towing/EmergencyBanner';
-import { TowingCard, TowingItem } from './components/towing/TowingCard';
-import { SafetyFooter } from './components/towing/SafetyFooter';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ServicesStackParamList } from '../../navigation/ServicesStack';
+
+import {
+  fetchTowingProviders,
+  clearErrors,
+} from '../../redux/slices/services/towingSlice';
+
+import { FilterChips, FilterChip } from './components/FilterChips';
+import { ScreenHeader } from './components/ScreenHeader';
+import { MapFAB } from './components/MapFAB';
+import { EmergencyBanner } from './components/towing/EmergencyBanner';
+import { TowingCard } from './components/towing/TowingCard';
+import { SafetyFooter } from './components/towing/SafetyFooter';
+import { useAppDispatch, useAppSelector } from '../../redux/hooks';
 
 const TYPE_FILTERS: FilterChip[] = [
   { id: 'all', label: 'All' },
@@ -23,68 +32,33 @@ const TYPE_FILTERS: FilterChip[] = [
   { id: 'heavy', label: 'Heavy Duty' },
 ];
 
-const TOWING_PROVIDERS: TowingItem[] = [
-  {
-    id: 't1',
-    name: 'RapidTow Pro',
-    rating: 4.9,
-    reviewCount: 1200,
-    distanceKm: 2.4,
-    etaMin: 15,
-    etaMax: 20,
-    tags: ['Flatbed', 'Winching'],
-    availability: 'available',
-    isPartner: true,
-    vehicleType: 'flatbed',
-  },
-  {
-    id: 't2',
-    name: 'Titan Heavy Duty',
-    rating: 4.7,
-    reviewCount: 850,
-    distanceKm: 4.1,
-    etaMin: 25,
-    etaMax: 35,
-    tags: ['Heavy Duty', 'Recovery'],
-    availability: 'available',
-    isPartner: false,
-    vehicleType: 'heavy',
-  },
-  {
-    id: 't3',
-    name: 'City Roadside Help',
-    rating: 4.5,
-    reviewCount: 420,
-    distanceKm: 1.8,
-    etaMin: 45,
-    etaMax: 55,
-    tags: ['Tire Change', 'Battery'],
-    availability: 'busy',
-    isPartner: false,
-    vehicleType: 'roadside',
-  },
-];
-
 export default function TowingScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<ServicesStackParamList>>();
+  const dispatch = useAppDispatch();
+
+  const { list, listLoading, listError } = useAppSelector(s => s.towing);
   const [activeType, setActiveType] = useState('all');
 
-  const filters = TYPE_FILTERS.map(f => ({
+  useEffect(() => {
+    dispatch(fetchTowingProviders({ type: activeType }));
+    return () => {
+      dispatch(clearErrors());
+    };
+  }, [activeType]);
+
+  const chipFilters = TYPE_FILTERS.map(f => ({
     ...f,
     active: f.id === activeType,
   }));
 
-  const filtered = TOWING_PROVIDERS.filter(
-    p => activeType === 'all' || p.vehicleType === activeType,
-  );
-
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="#F3F4F6" />
+      <ScreenHeader title="Towing" />
 
       <FlatList
-        data={filtered}
+        data={list}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
@@ -92,27 +66,52 @@ export default function TowingScreen() {
           <View style={styles.header}>
             <EmergencyBanner onDispatch={() => {}} />
             <FilterChips
-              filters={filters}
+              filters={chipFilters}
               onFilterPress={id => setActiveType(id)}
             />
           </View>
         }
         renderItem={({ item }) => (
           <TowingCard
-            item={item}
+            item={{
+              id: item.id,
+              name: item.name,
+              rating: item.rating,
+              reviewCount: item.review_count,
+              distanceKm: item.distance_km ?? 0,
+              etaMin: item.eta_min,
+              etaMax: item.eta_max,
+              tags: item.tags,
+              availability: item.availability,
+              isPartner: item.is_partner,
+              vehicleType: item.vehicle_type,
+            }}
             onDetails={id =>
               navigation.navigate('TowingDetail', { towingId: id })
             }
-            onCall={id => {
-              /* open phone dialer */
-            }}
+            onCall={() => {}}
           />
         )}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+        ListEmptyComponent={
+          listLoading ? (
+            <ActivityIndicator
+              style={styles.loader}
+              color="#10B981"
+              size="large"
+            />
+          ) : listError ? (
+            <Text style={styles.errorText}>{listError}</Text>
+          ) : (
+            <Text style={styles.emptyText}>No towing providers found.</Text>
+          )
+        }
         ListFooterComponent={
-          <View style={styles.footer}>
-            <SafetyFooter />
-          </View>
+          !listLoading && list.length > 0 ? (
+            <View style={styles.footer}>
+              <SafetyFooter />
+            </View>
+          ) : null
         }
       />
 
@@ -122,21 +121,21 @@ export default function TowingScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
+  safe: { flex: 1, backgroundColor: '#F3F4F6' },
+  list: { paddingHorizontal: 16, paddingBottom: 40 },
+  header: { paddingTop: 8, paddingBottom: 8, gap: 14 },
+  footer: { paddingTop: 20, paddingBottom: 60 },
+  loader: { marginTop: 48 },
+  errorText: {
+    textAlign: 'center',
+    marginTop: 48,
+    color: '#EF4444',
+    fontSize: 14,
   },
-  list: {
-    paddingHorizontal: 16,
-    paddingBottom: 40,
-  },
-  header: {
-    paddingTop: 16,
-    paddingBottom: 8,
-    gap: 14,
-  },
-  footer: {
-    paddingTop: 20,
-    paddingBottom: 60,
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 48,
+    color: '#9CA3AF',
+    fontSize: 14,
   },
 });

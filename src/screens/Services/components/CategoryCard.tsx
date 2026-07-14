@@ -27,7 +27,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
       activeOpacity={0.7}
     >
       <item.Icon
-        size={22}
+        size={20}
         color={isActive ? '#10B981' : '#374151'}
         strokeWidth={1.75}
       />
@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 8,
     gap: 8,
     borderWidth: 1,
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   label: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#374151',
     fontWeight: '500',
     textAlign: 'center',

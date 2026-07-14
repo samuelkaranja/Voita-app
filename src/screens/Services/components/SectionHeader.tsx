@@ -3,23 +3,12 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 interface SectionHeaderProps {
   title: string;
-  actionLabel?: string;
-  onAction?: () => void;
 }
 
-export const SectionHeader: React.FC<SectionHeaderProps> = ({
-  title,
-  actionLabel,
-  onAction,
-}) => {
+export const SectionHeader: React.FC<SectionHeaderProps> = ({ title }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
-      {actionLabel && (
-        <TouchableOpacity onPress={onAction} activeOpacity={0.7}>
-          <Text style={styles.action}>{actionLabel}</Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 };
@@ -31,9 +20,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: '#111827',
+    paddingBottom: 5,
   },
   action: {
     fontSize: 13,

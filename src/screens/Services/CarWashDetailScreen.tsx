@@ -1,79 +1,72 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import {
+  View,
+  ScrollView,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, RouteProp } from '@react-navigation/native';
-import { Sparkles, Car, Layers, Gem } from 'lucide-react-native';
+import { Sparkles, Car, Layers, Gem, HelpCircle } from 'lucide-react-native';
+import { LucideIcon } from 'lucide-react-native';
 
 import type { ServicesStackParamList } from '../../navigation/ServicesStack';
+import { useAppDispatch, useAppSelector } from '../../redux/hooks';
+import {
+  fetchCarWashDetail,
+  clearDetail,
+  CarWashService,
+} from '../../redux/slices/services/carWashSlice';
+
 import { CarWashDetailHero } from './components/carwash-detail/CarWashDetailHero';
 import { CarWashAbout } from './components/carwash-detail/CarWashAbout';
-import { LoyaltyPassBanner } from './components/carwash-detail/LoyaltyPassBanner';
-import {
-  CarWashServiceCard,
-  CarWashServiceEntry,
-} from './components/carwash-detail/CarWashServiceCard';
-import {
-  ReviewCard,
-  ReviewEntry,
-} from './components/mechanic-detail/ReviewCard';
+import { CarWashServiceCard } from './components/carwash-detail/CarWashServiceCard';
+import { ReviewCard } from './components/mechanic-detail/ReviewCard';
 import { CarWashDetailBottomBar } from './components/carwash-detail/CarWashDetailBottomBar';
 import { SectionHeader } from './components/SectionHeader';
 
 type DetailRoute = RouteProp<ServicesStackParamList, 'CarWashDetail'>;
 
-// Static data (replace with route.params / API)
-
-const SERVICES: CarWashServiceEntry[] = [
-  {
-    id: 'cs1',
-    label: 'Full Detail',
-    description: 'Interior deep clean, exterior wax, and engine bay wipe down.',
-    price: 45,
-    Icon: Sparkles,
-  },
-  {
-    id: 'cs2',
-    label: 'Exterior Wash',
-    description: 'Quick touchless wash with air drying and tire shine.',
-    price: 15,
-    Icon: Car,
-  },
-  {
-    id: 'cs3',
-    label: 'Interior Pro',
-    description: 'Deep vacuum, steam clean, and dash conditioning.',
-    price: 30,
-    Icon: Layers,
-  },
-  {
-    id: 'cs4',
-    label: 'Ceramic Coating',
-    description: 'Nano-technology protection with 6-month durability.',
-    price: 120,
-    Icon: Gem,
-    premium: true,
-  },
-];
-
-const REVIEWS: ReviewEntry[] = [
-  {
-    id: 'rv1',
-    initials: 'JS',
-    avatarColor: '#10B981',
-    name: 'James Sterling',
-    daysAgo: 2,
-    rating: 5,
-    quote:
-      'The ceramic coating they applied is unbelievable. Water just beads off, and the finish looks better than the day I bought it from the dealer.',
-  },
-];
-
-// Screen
+const ICON_MAP: Record<string, LucideIcon> = {
+  sparkles: Sparkles,
+  car: Car,
+  layers: Layers,
+  gem: Gem,
+};
+const fallbackIcon: LucideIcon = HelpCircle;
 
 export default function CarWashDetailScreen() {
   const route = useRoute<DetailRoute>();
   const { carWashId } = route.params;
-  // Use carWashId to fetch from Redux / API as needed
+
+  const dispatch = useAppDispatch();
+  const { detail, detailLoading, detailError } = useAppSelector(s => s.carwash);
+
+  useEffect(() => {
+    dispatch(fetchCarWashDetail(carWashId));
+    return () => {
+      dispatch(clearDetail());
+    };
+  }, [carWashId]);
+
+  if (detailLoading) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <ActivityIndicator color="#10B981" size="large" />
+      </SafeAreaView>
+    );
+  }
+
+  if (detailError || !detail) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <Text style={styles.errorText}>
+          {detailError ?? 'Car wash not found.'}
+        </Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
@@ -83,59 +76,68 @@ export default function CarWashDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         <CarWashDetailHero
-          imageUri="https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&q=80"
-          name="Pristine Auto Spa"
-          rating={4.8}
-          reviewCount={1200}
-          waitMins={5}
-          isVerifiedPartner
+          imageUri={detail.image_url}
+          name={detail.name}
+          rating={detail.rating}
+          reviewCount={detail.review_count}
+          isVerifiedPartner={detail.verified}
           onShare={() => {}}
         />
 
         <View style={styles.body}>
-          <CarWashAbout
-            title="About Pristine Auto Spa"
-            segments={[
-              {
-                text: 'Experience automotive excellence at its finest. We utilize premium, ',
-              },
-              { text: 'eco-friendly products', highlighted: true },
-              {
-                text: ' and state-of-the-art water reclamation systems to ensure your vehicle shines while respecting the environment. Our certified technicians treat every car like a masterpiece.',
-              },
-            ]}
-          />
-
-          <LoyaltyPassBanner
-            title="Weekly Loyalty Pass"
-            subtitle="Get unlimited exterior washes and 2 interior pros."
-            savingsLabel="Save 40%"
-            onPress={() => {}}
-          />
+          {/* About */}
+          {detail.description ? (
+            <CarWashAbout
+              title={`About ${detail.name}`}
+              segments={[{ text: detail.description }]}
+            />
+          ) : null}
 
           {/* Services */}
-          <View style={styles.section}>
-            <SectionHeader
-              title="Services"
-              actionLabel="VIEW ALL"
-              onAction={() => {}}
-            />
-            {SERVICES.map(svc => (
-              <CarWashServiceCard
-                key={svc.id}
-                item={svc}
-                onAddToBooking={id => {}}
-              />
-            ))}
-          </View>
+          {detail.services.length > 0 && (
+            <View style={styles.section}>
+              <SectionHeader title="Services" />
+              {detail.services.map((svc: CarWashService) => (
+                <CarWashServiceCard
+                  key={svc.id}
+                  item={{
+                    id: String(svc.id),
+                    label: svc.label,
+                    description: svc.description,
+                    price: Number(String(svc.price).replace(/[^0-9.]/g, '')),
+                    Icon: ICON_MAP[svc.icon] ?? fallbackIcon,
+                    premium: svc.is_premium,
+                  }}
+                  onAddToBooking={() => {}}
+                />
+              ))}
+            </View>
+          )}
 
-          {/* Client Reviews */}
-          <View style={styles.section}>
-            <SectionHeader title="Client Reviews" />
-            {REVIEWS.map(r => (
-              <ReviewCard key={r.id} item={r} />
-            ))}
-          </View>
+          {/* Reviews */}
+          {detail.reviews.length > 0 && (
+            <View style={styles.section}>
+              <SectionHeader title="Client Reviews" />
+              {detail.reviews.map(r => (
+                <ReviewCard
+                  key={r.id}
+                  item={{
+                    id: String(r.id),
+                    name: r.name,
+                    initials: r.name
+                      .split(' ')
+                      .map((n: string) => n[0])
+                      .join('')
+                      .slice(0, 2),
+                    avatarColor: '#10B981',
+                    daysAgo: 0,
+                    rating: r.rating,
+                    quote: r.comment,
+                  }}
+                />
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -148,22 +150,21 @@ export default function CarWashDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
+  safe: { flex: 1, backgroundColor: '#F3F4F6', paddingBottom: 100 },
+  centered: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#F3F4F6',
   },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingBottom: 16,
-  },
-  body: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    gap: 20,
-  },
-  section: {
-    gap: 12,
+  scroll: { flex: 1 },
+  content: { paddingBottom: 16 },
+  body: { paddingHorizontal: 16, paddingTop: 16, gap: 20 },
+  section: { gap: 12 },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 24,
   },
 });

@@ -43,19 +43,6 @@ export const DetailHero: React.FC<DetailHeroProps> = ({
         >
           <ArrowLeft size={20} color="#111827" strokeWidth={2.5} />
         </TouchableOpacity>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.iconBtn} onPress={onShare}>
-            <Share2 size={18} color="#111827" strokeWidth={2.5} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={onFavourite}>
-            <Heart
-              size={18}
-              color={isFavourited ? '#EF4444' : '#111827'}
-              fill={isFavourited ? '#EF4444' : 'transparent'}
-              strokeWidth={2.5}
-            />
-          </TouchableOpacity>
-        </View>
       </View>
 
       {/* Verified badge */}
@@ -86,10 +73,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    gap: 8,
   },
   iconBtn: {
     width: 36,

@@ -13,7 +13,6 @@ export interface CarWashItem {
   id: string;
   name: string;
   rating: number;
-  priceTier: '$' | '$$' | '$$$';
   distanceKm: number;
   area: string;
   imageUri: string;
@@ -54,10 +53,10 @@ export const CarWashCard: React.FC<CarWashCardProps> = ({
           </View>
         )}
 
-        <View style={styles.waitBadge}>
+        {/* <View style={styles.waitBadge}>
           <Clock size={12} color="#374151" strokeWidth={2} />
           <Text style={styles.waitText}>Wait: {item.waitMins} mins</Text>
-        </View>
+        </View> */}
       </View>
 
       {/* Body */}
@@ -72,7 +71,6 @@ export const CarWashCard: React.FC<CarWashCardProps> = ({
               <Star size={13} color="#F59E0B" fill="#F59E0B" strokeWidth={0} />
               <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
             </View>
-            <Text style={styles.priceTier}>{item.priceTier}</Text>
           </View>
         </View>
 
@@ -108,13 +106,13 @@ export const CarWashCard: React.FC<CarWashCardProps> = ({
         </ScrollView>
 
         {/* CTA */}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.bookButton}
           onPress={() => onBookService(item.id)}
           activeOpacity={0.8}
         >
           <Text style={styles.bookButtonText}>Book Service</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </TouchableOpacity>
   );
@@ -130,6 +128,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.07,
     shadowRadius: 8,
     elevation: 3,
+    marginVertical: 10,
   },
   imageWrapper: {
     width: '100%',
@@ -184,7 +183,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   name: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
     color: '#111827',
     flex: 1,

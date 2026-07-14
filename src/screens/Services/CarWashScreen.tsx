@@ -1,15 +1,27 @@
-import React, { useState } from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  Text,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ServicesStackParamList } from '../../navigation/ServicesStack';
+import {
+  fetchCarWashes,
+  clearErrors,
+} from '../../redux/slices/services/carWashSlice';
 
 import { SearchBar } from './components/SearchBar';
 import { FilterChips, FilterChip } from './components/FilterChips';
+import { ScreenHeader } from './components/ScreenHeader';
 import { MapFAB } from './components/MapFAB';
-import { CarWashCard, CarWashItem } from './components/carwash/CarWashCard';
+import { CarWashCard } from './components/carwash/CarWashCard';
 import { WeeklyPassBanner } from './components/carwash/WeeklyPassBanner';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ServicesStackParamList } from '../../navigation/ServicesStack';
-import { useNavigation } from '@react-navigation/native';
+import { useAppDispatch, useAppSelector } from '../../redux/hooks';
 
 const TYPE_FILTERS: FilterChip[] = [
   { id: 'all', label: 'All Centers' },
@@ -18,79 +30,48 @@ const TYPE_FILTERS: FilterChip[] = [
   { id: 'full', label: 'Full Detail' },
 ];
 
-const CAR_WASHES: CarWashItem[] = [
-  {
-    id: 'cw1',
-    name: 'Pristine Auto Spa',
-    rating: 4.9,
-    priceTier: '$$',
-    distanceKm: 4.8,
-    area: 'Main Avenue',
-    imageUri:
-      'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=600&q=80',
-    waitMins: 15,
-    verified: true,
-    tags: [{ label: 'Full Detail' }, { label: 'Eco-Wax' }],
-  },
-  {
-    id: 'cw2',
-    name: 'EcoStream Wash',
-    rating: 4.7,
-    priceTier: '$',
-    distanceKm: 2.1,
-    area: 'Green District',
-    imageUri:
-      'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=600&q=80',
-    waitMins: 5,
-    verified: false,
-    tags: [{ label: 'Exterior' }, { label: 'Waterless', highlighted: true }],
-  },
-  {
-    id: 'cw3',
-    name: 'Signature Detail Co.',
-    rating: 5.0,
-    priceTier: '$$$',
-    distanceKm: 6.5,
-    area: 'Downtown',
-    imageUri:
-      'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600&q=80',
-    waitMins: 45,
-    verified: false,
-    tags: [{ label: 'Ceramic Coating' }, { label: 'Interior Pro' }],
-  },
-];
-
 export default function CarWashScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<ServicesStackParamList>>();
+  const dispatch = useAppDispatch();
+
+  const { list, listLoading, listError } = useAppSelector(s => s.carwash);
+
   const [search, setSearch] = useState('');
   const [activeType, setActiveType] = useState('all');
 
-  const filters = TYPE_FILTERS.map(f => ({
+  useEffect(() => {
+    dispatch(fetchCarWashes({ type: activeType }));
+    return () => {
+      dispatch(clearErrors());
+    };
+  }, [activeType]);
+
+  const handleSearchSubmit = useCallback(() => {
+    dispatch(fetchCarWashes({ search, type: activeType }));
+  }, [search, activeType]);
+
+  // Client-side filter on top of API results
+  const filteredList = list.filter(w => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      w.name.toLowerCase().includes(q) ||
+      w.area.toLowerCase().includes(q) ||
+      w.tags.some(t => t.toLowerCase().includes(q))
+    );
+  });
+
+  const chipFilters = TYPE_FILTERS.map(f => ({
     ...f,
     active: f.id === activeType,
   }));
 
-  const filtered = CAR_WASHES.filter(w => {
-    const matchesSearch =
-      search.trim() === '' ||
-      w.name.toLowerCase().includes(search.toLowerCase()) ||
-      w.area.toLowerCase().includes(search.toLowerCase()) ||
-      w.tags.some(t => t.label.toLowerCase().includes(search.toLowerCase()));
-
-    const matchesType =
-      activeType === 'all' ||
-      w.tags.some(t =>
-        t.label.toLowerCase().includes(activeType.toLowerCase()),
-      );
-
-    return matchesSearch && matchesType;
-  });
-
   return (
     <SafeAreaView style={styles.safe}>
+      <ScreenHeader title="Car Wash" />
       <FlatList
-        data={filtered}
+        data={filteredList}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
@@ -100,30 +81,55 @@ export default function CarWashScreen() {
               value={search}
               onChangeText={setSearch}
               placeholder="Search centers near you..."
+              onSubmitEditing={handleSearchSubmit}
+              returnKeyType="search"
             />
             <FilterChips
-              filters={filters}
+              filters={chipFilters}
               onFilterPress={id => setActiveType(id)}
             />
           </View>
         }
         renderItem={({ item }) => (
           <CarWashCard
-            item={item}
+            item={{
+              id: item.id,
+              name: item.name,
+              rating: item.rating,
+              distanceKm: item.distance_km ?? 0,
+              area: item.area,
+              imageUri: item.image_url,
+              waitMins: item.wait_time_mins,
+              verified: item.verified,
+              tags: item.tags.map(t => ({ label: t })),
+            }}
             onPress={id =>
               navigation.navigate('CarWashDetail', { carWashId: id })
             }
-            onBookService={id => {
-              /* open booking flow */
-            }}
+            onBookService={() => {}}
           />
         )}
         ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
-        ListFooterComponent={
-          <View style={styles.footer}>
-            <WeeklyPassBanner onLearnMore={() => {}} />
-          </View>
+        ListEmptyComponent={
+          listLoading ? (
+            <ActivityIndicator
+              style={styles.loader}
+              color="#10B981"
+              size="large"
+            />
+          ) : listError ? (
+            <Text style={styles.errorText}>{listError}</Text>
+          ) : (
+            <Text style={styles.emptyText}>No car wash centers found.</Text>
+          )
         }
+        // ListFooterComponent={
+        //   !listLoading && filteredList.length > 0 ? (
+        //     <View style={styles.footer}>
+        //       <WeeklyPassBanner onLearnMore={() => {}} />
+        //     </View>
+        //   ) : null
+        // }
       />
       <MapFAB onPress={() => {}} />
     </SafeAreaView>
@@ -131,21 +137,21 @@ export default function CarWashScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
+  safe: { flex: 1, backgroundColor: '#F3F4F6', paddingBottom: 70 },
+  list: { paddingHorizontal: 16, paddingBottom: 40 },
+  header: { paddingTop: 8, paddingBottom: 8, gap: 12 },
+  footer: { paddingTop: 14, paddingBottom: 60 },
+  loader: { marginTop: 48 },
+  errorText: {
+    textAlign: 'center',
+    marginTop: 48,
+    color: '#EF4444',
+    fontSize: 14,
   },
-  list: {
-    paddingHorizontal: 16,
-    paddingBottom: 40,
-  },
-  header: {
-    paddingTop: 16,
-    paddingBottom: 8,
-    gap: 12,
-  },
-  footer: {
-    paddingTop: 14,
-    paddingBottom: 60,
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 48,
+    color: '#9CA3AF',
+    fontSize: 14,
   },
 });

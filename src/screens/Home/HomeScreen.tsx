@@ -429,11 +429,11 @@ export default function HomeScreen() {
           )}
 
           {/* Night badge */}
-          {isNight && (
+          {/* {isNight && (
             <View style={styles.nightBadge}>
               <Text style={styles.nightBadgeText}>🌙 Night Mode Active</Text>
             </View>
-          )}
+          )} */}
 
           {/* Route info */}
           {distance && duration && (

@@ -34,7 +34,7 @@ export const CarWashServiceCard: React.FC<CarWashServiceCardProps> = ({
           />
         </View>
         <Text style={[styles.price, isPremium && styles.pricePremium]}>
-          ${item.price}
+          Kshs {Number(item.price).toLocaleString()}
         </Text>
       </View>
 
@@ -49,19 +49,6 @@ export const CarWashServiceCard: React.FC<CarWashServiceCardProps> = ({
           {item.description}
         </Text>
       </View>
-
-      {/* CTA */}
-      <TouchableOpacity
-        style={[styles.button, isPremium && styles.buttonPremium]}
-        onPress={() => onAddToBooking(item.id)}
-        activeOpacity={0.8}
-      >
-        <Text
-          style={[styles.buttonText, isPremium && styles.buttonTextPremium]}
-        >
-          {isPremium ? 'Book Premium' : 'Add to Booking'}
-        </Text>
-      </TouchableOpacity>
     </View>
   );
 };

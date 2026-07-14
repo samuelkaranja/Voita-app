@@ -92,13 +92,13 @@ export const MechanicCard: React.FC<MechanicCardProps> = ({
         </ScrollView>
 
         {/* CTA */}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.bookButton}
           onPress={() => onBookAppointment(item.id)}
           activeOpacity={0.8}
         >
-          <Text style={styles.bookButtonText}>Book Appointment</Text>
-        </TouchableOpacity>
+          <Text style={styles.bookButtonText}>Check Details</Text>
+        </TouchableOpacity> */}
       </View>
     </TouchableOpacity>
   );
@@ -114,6 +114,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.07,
     shadowRadius: 8,
     elevation: 3,
+    marginBottom: 5,
   },
   imageWrapper: {
     width: '100%',
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 10,
     right: 12,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: '#10B981',
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -164,8 +165,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   name: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: '#111827',
     flex: 1,
     marginRight: 8,
@@ -187,6 +188,7 @@ const styles = StyleSheet.create({
   },
   distance: {
     fontSize: 12,
+    fontWeight: '600',
     color: '#9CA3AF',
   },
   tagsRow: {
@@ -206,14 +208,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   bookButton: {
-    backgroundColor: '#111827',
+    backgroundColor: '#001810',
     borderRadius: 10,
-    paddingVertical: 14,
+    paddingVertical: 10,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 6,
   },
   bookButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#FFFFFF',
     letterSpacing: 0.2,

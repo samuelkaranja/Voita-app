@@ -42,10 +42,10 @@ export const NearbyServiceCard: React.FC<NearbyServiceCardProps> = ({
           </Text>
           {item.verified && (
             <CheckCircle
-              size={15}
-              color="#10B981"
+              size={18}
+              color="#ffffff"
               fill="#10B981"
-              strokeWidth={0}
+              strokeWidth={3}
             />
           )}
         </View>
@@ -102,12 +102,13 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '800',
     color: '#111827',
     flexShrink: 1,
   },
   category: {
     fontSize: 12,
+    fontWeight: '700',
     color: '#6B7280',
   },
   ratingRow: {
@@ -125,16 +126,12 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   detailsButton: {
-    backgroundColor: '#1F2937',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    alignSelf: 'flex-start',
     marginTop: 4,
   },
   detailsButtonText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#000000',
+    textDecorationLine: 'underline',
   },
 });

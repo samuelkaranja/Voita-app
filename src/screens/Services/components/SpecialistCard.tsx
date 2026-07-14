@@ -34,13 +34,7 @@ export const SpecialistCard: React.FC<SpecialistCardProps> = ({
         />
         {item.verified && (
           <View style={styles.verifiedBadge}>
-            <CheckCircle
-              size={10}
-              color="#FFFFFF"
-              fill="#10B981"
-              strokeWidth={0}
-            />
-            <Text style={styles.verifiedText}>VERIFIED</Text>
+            <Text style={styles.verifiedText}>Verified</Text>
           </View>
         )}
       </View>
@@ -92,11 +86,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
     borderRadius: 20,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 2,
     gap: 4,
   },
   verifiedText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.5,
@@ -107,8 +101,9 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '800',
     color: '#111827',
+    textDecorationLine: 'underline',
   },
   meta: {
     flexDirection: 'row',
@@ -122,6 +117,7 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 11,
+    fontWeight: '600',
     color: '#6B7280',
   },
 });

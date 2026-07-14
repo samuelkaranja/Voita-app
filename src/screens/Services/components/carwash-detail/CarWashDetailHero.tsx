@@ -16,7 +16,6 @@ interface CarWashDetailHeroProps {
   name: string;
   rating: number;
   reviewCount: number;
-  waitMins: number;
   isVerifiedPartner?: boolean;
   onShare?: () => void;
 }
@@ -27,7 +26,6 @@ export const CarWashDetailHero: React.FC<CarWashDetailHeroProps> = ({
   name,
   rating,
   reviewCount,
-  waitMins,
   isVerifiedPartner,
   onShare,
 }) => {
@@ -54,9 +52,9 @@ export const CarWashDetailHero: React.FC<CarWashDetailHeroProps> = ({
           <ArrowLeft size={20} color="#111827" strokeWidth={2.5} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>{name}</Text>
+        {/* <Text style={styles.headerTitle}>{name}</Text> */}
 
-        <View style={styles.headerRight}>
+        {/* <View style={styles.headerRight}>
           <TouchableOpacity
             style={styles.iconBtn}
             onPress={onShare}
@@ -69,7 +67,7 @@ export const CarWashDetailHero: React.FC<CarWashDetailHeroProps> = ({
           ) : (
             <View style={styles.avatarPlaceholder} />
           )}
-        </View>
+        </View> */}
       </View>
 
       {/* Bottom overlaid pills */}
@@ -89,10 +87,6 @@ export const CarWashDetailHero: React.FC<CarWashDetailHeroProps> = ({
                 : reviewCount}{' '}
               Reviews)
             </Text>
-          </View>
-          <View style={styles.pill}>
-            <Clock size={13} color="#374151" strokeWidth={2} />
-            <Text style={styles.pillText}>{waitMins} min wait</Text>
           </View>
         </View>
       </View>
@@ -121,14 +115,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    flex: 1,
-    textAlign: 'center',
-    marginHorizontal: 8,
   },
   headerRight: {
     flexDirection: 'row',
@@ -159,6 +145,8 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
   },
   bottomContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
     position: 'absolute',
     bottom: 16,
     left: 16,
@@ -175,7 +163,7 @@ const styles = StyleSheet.create({
   verifiedText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#111827',
+    color: 'green',
   },
   pillsRow: {
     flexDirection: 'row',
