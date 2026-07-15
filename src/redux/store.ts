@@ -10,6 +10,7 @@ import carWashReducer from './slices/services/carWashSlice';
 import towingReducer from './slices/services/towingSlice';
 import scoutsReducer from './slices/services/scoutsSlice';
 import exploreReducer from './slices/services/exploreSlice';
+import notificationsReducer from './slices/notifications/notificationsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -24,6 +25,8 @@ export const store = configureStore({
     towing: towingReducer,
     scouts: scoutsReducer,
     explore: exploreReducer,
+
+    notifications: notificationsReducer,
   },
 });
 

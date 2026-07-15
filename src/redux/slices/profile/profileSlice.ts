@@ -4,19 +4,25 @@ import { BASE_URL } from '../../../api/config';
 
 // ── Debug helpers ─────────────────────────────────────────────────────────────
 const debugRequest = (name: string, config: any) => {
-  console.log(`\n🔵 [${name}] REQUEST:`, JSON.stringify(config, null, 2));
+  if (__DEV__) {
+    console.log(`\n🔵 [${name}] REQUEST:`, JSON.stringify(config, null, 2));
+  }
 };
 const debugResponse = (name: string, data: any) => {
-  console.log(`\n🟢 [${name}] RESPONSE:`, JSON.stringify(data, null, 2));
+  if (__DEV__) {
+    console.log(`\n🟢 [${name}] RESPONSE:`, JSON.stringify(data, null, 2));
+  }
 };
 const debugError = (name: string, err: any) => {
-  console.log(`\n🔴 [${name}] ERROR:`, {
-    status: err.response?.status,
-    detail: err.response?.data,
-    message: err.message,
-    url: err.config?.url,
-    headers: err.config?.headers,
-  });
+  if (__DEV__) {
+    console.log(`\n🔴 [${name}] ERROR:`, {
+      status: err.response?.status,
+      detail: err.response?.data,
+      message: err.message,
+      url: err.config?.url,
+      headers: err.config?.headers,
+    });
+  }
 };
 
 // ── Safe error extractor ──────────────────────────────────────────────────────
@@ -231,8 +237,10 @@ export const addEmergencyContact = createAsyncThunk(
     try {
       // Serialize manually to guarantee exact JSON string
       const body = JSON.stringify(data);
-      console.log('Raw body being sent:', body);
-      console.log('Token present:', !!token);
+      if (__DEV__) {
+        console.log('Raw body being sent:', body);
+        console.log('Token present:', !!token);
+      }
 
       const res = await axios.post(
         `${BASE_URL}/api/v1/profile/emergency-contacts`,
@@ -244,13 +252,17 @@ export const addEmergencyContact = createAsyncThunk(
           },
         },
       );
-      console.log('Contact response:', JSON.stringify(res.data));
+      if (__DEV__) {
+        console.log('Contact response:', JSON.stringify(res.data));
+      }
       return res.data.contacts as EmergencyContact[];
     } catch (err: any) {
-      console.log(
-        'Contact error full response:',
-        JSON.stringify(err.response?.data),
-      );
+      if (__DEV__) {
+        console.log(
+          'Contact error full response:',
+          JSON.stringify(err.response?.data),
+        );
+      }
       return rejectWithValue(extractError(err));
     }
   },

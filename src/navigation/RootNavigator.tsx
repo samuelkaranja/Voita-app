@@ -5,11 +5,16 @@ import { useSelector } from 'react-redux';
 import SplashScreen from '../screens/Splash/SplashScreen';
 import AuthStack from './AuthStack';
 import AppTabs from './AppTabs';
+import { usePushNotifications } from '../hooks/usePushNotifications';
+import { useNotificationListeners } from '../hooks/useNotificationListeners';
 
 const Stack = createNativeStackNavigator();
 
 export default function RootNavigator() {
   const { token, loading } = useSelector((state: any) => state.auth);
+
+  usePushNotifications();
+  useNotificationListeners();
 
   // Show splash while checking auth
   if (loading.init) {
