@@ -17,7 +17,7 @@ jobs:
       # Use Node 20 (fixes Metro + modern JS issues)
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.11.0
           cache: npm
 
       # Faster + more reliable installs in CI
