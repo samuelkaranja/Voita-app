@@ -4,6 +4,8 @@ import authReducer from './slices/auth/authSlice';
 import profileReducer from './slices/profile/profileSlice';
 import userReducer from './slices/user/userSlice';
 import vehicleReducer from './slices/vehicle/vehicleSlice';
+import communityReducer from './slices/community/communitySlice';
+import chatReducer from './slices/chat/chatSlice';
 
 import mechanicsReducer from './slices/services/mechanicsSlice';
 import carWashReducer from './slices/services/carWashSlice';
@@ -19,6 +21,8 @@ export const store = configureStore({
     profile: profileReducer,
     user: userReducer,
     vehicle: vehicleReducer,
+    community: communityReducer,
+    chat: chatReducer,
 
     mechanics: mechanicsReducer,
     carwash: carWashReducer,

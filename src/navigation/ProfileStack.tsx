@@ -6,8 +6,6 @@ import { EditPersonalDetailsScreen } from '../screens/Profile/EditPersonalDetail
 import { EditVehicleDetailsScreen } from '../screens/Profile/EditVehicleDetailsScreen';
 import { AddVehicleScreen } from '../screens/Profile/AddVehicleScreen';
 
-import ProfileHeader from '../components/ProfileHeader';
-
 export type ProfileStackParamList = {
   ProfileMain: undefined;
   EditProfile: undefined;

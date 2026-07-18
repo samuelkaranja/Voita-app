@@ -79,5 +79,4 @@ export const useLocation = () => {
   }, []);
 
   return { location };
-  console.log('Location', location);
 };

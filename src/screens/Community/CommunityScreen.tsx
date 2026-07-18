@@ -1,98 +1,213 @@
-import React from 'react';
-import { StatusBar, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-// 1. IMPORT THE SAFE AREA HOOK
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CommunityRoom, PendingRequest } from '../../types/community';
+import { colors } from '../../theme/colors';
+import { useAppDispatch, useAppSelector } from '../../redux/hooks';
+import CommunityHeader from './components/CommunityHeader';
+import SectionHeader from './components/SectionHeader';
+import GeneralRoomCard from './components/GeneralRoomCard';
+import BrandRoomCard from './components/BrandRoomCard';
+import PendingRequestCard from './components/PendingRequestCard';
+import BrowseAllRoomsCTA from './components/BrowseAllRoomsCTA';
+import {
+  cancelJoinRequest,
+  fetchCommunityRooms,
+} from '../../redux/slices/community/communitySlice';
+import { CommunityStackParamList } from '../../navigation/CommunityStack';
 
-import CommunityHero from './components/CommunityHero';
-import EmergencyDirectory from './components/EmergencyDirectory';
-import ServiceScoutCard from './components/ServiceScoutCard';
-import DiscussionSection from './components/DiscussionSection';
-import NewsCard from './components/NewsCard';
+type NavProp = NativeStackNavigationProp<
+  CommunityStackParamList,
+  'CommunityRooms'
+>;
 
-const NEWS_DATA = [
-  {
-    id: '1',
-    author: 'Ezekiel K.',
-    time: '2h ago',
-    tag: '#MaintenanceTips',
-    badge: 'TOYOTA OWNER',
-    title: 'Best brake pads for wet weather conditions in Nairobi?',
-    content:
-      "I've noticed a significant decrease in stopping power since the heavy rains started. Does anyone have experience with the new ceramic options from Brembo, or should I stick to OEM?",
-    likes: 24,
-    comments: 8,
-  },
-  {
-    id: '2',
-    author: 'Sarah M.',
-    time: '5h ago',
-    tag: '#EVMobility',
-    badge: 'HYBRID TECH',
-    title: 'Charging station reliability on the highway to Nakuru',
-    content:
-      'Planning my first long trip with the new hybrid. Are the fast-chargers at the major fuel stations actually operational, or should I rely purely on the ICE engine for this stretch?',
-    likes: 42,
-    comments: 15,
-  },
-  {
-    id: '3',
-    author: 'David O.',
-    time: '1d ago',
-    tag: '#OffRoading',
-    badge: '4X4 EXPERT',
-    title: 'Top 5 mud-terrain tires for weekend trails',
-    content:
-      "After testing three different brands last season, I've compiled a list of what actually works in deep clay. Hint: pressure management is more important than the tread pattern itself.",
-    likes: 89,
-    comments: 32,
-  },
-];
+// Sections are flattened into one FlatList so header labels, room rows,
+// pending requests, and the CTA all share a single scroll + spacing rhythm.
+type ListItem =
+  | { kind: 'sectionHeader'; id: string; title: string }
+  | { kind: 'generalRoom'; id: string; room: CommunityRoom }
+  | { kind: 'brandRoom'; id: string; room: CommunityRoom }
+  | { kind: 'pendingRequest'; id: string; request: PendingRequest }
+  | { kind: 'browseCta'; id: string };
 
 export default function CommunityScreen() {
-  // 2. INITIALIZE THE SAFE AREA INSETS
-  const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NavProp>();
+  const dispatch = useAppDispatch();
+
+  const { generalRooms, brandRooms, pendingRequests, isLoadingRooms } =
+    useAppSelector(state => state.community);
+
+  useEffect(() => {
+    dispatch(fetchCommunityRooms());
+  }, [dispatch]);
+
+  const openRoom = useCallback(
+    (room: CommunityRoom) => {
+      navigation.navigate('ChatRoom', { roomId: room.id, roomName: room.name });
+    },
+    [navigation],
+  );
+
+  const handleCancel = useCallback(
+    (roomId: string) => {
+      dispatch(cancelJoinRequest(roomId));
+    },
+    [dispatch],
+  );
+
+  const goToBrowse = useCallback(() => {
+    navigation.navigate('BrowseRooms');
+  }, [navigation]);
+
+  if (isLoadingRooms && generalRooms.length === 0) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (!isLoadingRooms && generalRooms.length === 0 && brandRooms.length === 0) {
+    return (
+      <View style={styles.container}>
+        <CommunityHeader onSearchPress={() => {}} />
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyTitle}>No rooms yet</Text>
+          <Text style={styles.emptySubtitle}>
+            Check back soon, or browse brand communities to join one.
+          </Text>
+          <Pressable
+            style={styles.emptyButton}
+            onPress={() => navigation.navigate('BrowseRooms')}
+          >
+            <Text style={styles.emptyButtonText}>Browse All Rooms</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  const items: ListItem[] = [
+    { kind: 'sectionHeader', id: 'h-general', title: 'General' },
+    ...generalRooms.map(room => ({
+      kind: 'generalRoom' as const,
+      id: room.id,
+      room,
+    })),
+
+    ...(brandRooms.length > 0
+      ? [
+          {
+            kind: 'sectionHeader' as const,
+            id: 'h-brand',
+            title: 'My Brand Rooms',
+          },
+          ...brandRooms.map(room => ({
+            kind: 'brandRoom' as const,
+            id: room.id,
+            room,
+          })),
+        ]
+      : []),
+
+    ...(pendingRequests.length > 0
+      ? [
+          {
+            kind: 'sectionHeader' as const,
+            id: 'h-pending',
+            title: `Pending Requests (${pendingRequests.length})`,
+          },
+          ...pendingRequests.map(request => ({
+            kind: 'pendingRequest' as const,
+            id: request.id,
+            request,
+          })),
+        ]
+      : []),
+
+    { kind: 'browseCta', id: 'browse-cta' },
+  ];
 
   return (
-    <>
-      <StatusBar backgroundColor="#001810" barStyle="light-content" />
-
-      {/* 3. ASSIGN THE SPACING TO contentContainerStyle */}
-      <ScrollView
-        style={styles.screen}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 95 }}
-      >
-        <CommunityHero />
-        <EmergencyDirectory />
-        <ServiceScoutCard />
-
-        <DiscussionSection />
-
-        {/* Map through news data to render cards */}
-        <View>
-          {NEWS_DATA.map(item => (
-            <NewsCard
-              key={item.id}
-              author={item.author}
-              time={item.time}
-              tag={item.tag}
-              badge={item.badge}
-              title={item.title}
-              content={item.content}
-              likes={item.likes}
-              comments={item.comments}
-              onJoinPress={() => console.log(`Joining discussion ${item.id}`)}
-            />
-          ))}
-        </View>
-      </ScrollView>
-    </>
+    <View style={styles.container}>
+      <CommunityHeader onSearchPress={() => {}} />
+      <FlatList
+        data={items}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.listContent}
+        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        renderItem={({ item }) => {
+          switch (item.kind) {
+            case 'sectionHeader':
+              return <SectionHeader title={item.title} />;
+            case 'generalRoom':
+              return <GeneralRoomCard room={item.room} onPress={openRoom} />;
+            case 'brandRoom':
+              return <BrandRoomCard room={item.room} onPress={openRoom} />;
+            case 'pendingRequest':
+              return (
+                <PendingRequestCard
+                  request={item.request}
+                  onCancel={handleCancel}
+                />
+              );
+            case 'browseCta':
+              return <BrowseAllRoomsCTA onPress={goToBrowse} />;
+            default:
+              return null;
+          }
+        }}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  container: { flex: 1, backgroundColor: colors.background },
+  loadingContainer: {
     flex: 1,
-    backgroundColor: '#f3f6f4',
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  emptyButton: {
+    backgroundColor: colors.accent,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  emptyButtonText: {
+    color: colors.background,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  listContent: { paddingBottom: 100 },
 });
