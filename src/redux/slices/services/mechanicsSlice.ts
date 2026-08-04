@@ -1,7 +1,12 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { apiFetch, buildUrl, extractError } from '../../../services/api';
+import {
+  apiFetch,
+  apiFetchAuth,
+  buildUrl,
+  extractError,
+} from '../../../services/api';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// Types
 
 export interface MechanicService {
   id: string;
@@ -65,6 +70,14 @@ export interface MechanicsFilters {
   lng?: number;
 }
 
+export interface MechanicSuggestionPayload {
+  name: string;
+  phone: string;
+  location: string;
+  specialty: string;
+  reason: string;
+}
+
 interface MechanicsState {
   list: MechanicListItem[];
   detail: MechanicDetail | null;
@@ -73,9 +86,11 @@ interface MechanicsState {
   detailLoading: boolean;
   listError: string | null;
   detailError: string | null;
+  suggestLoading: boolean;
+  suggestError: string | null;
 }
 
-// ── Thunks ────────────────────────────────────────────────────────────────────
+// Thunks
 
 export const fetchMechanics = createAsyncThunk<
   MechanicListItem[],
@@ -106,7 +121,23 @@ export const fetchMechanicDetail = createAsyncThunk<MechanicDetail, string>(
   },
 );
 
-// ── Slice ─────────────────────────────────────────────────────────────────────
+export const suggestMechanic = createAsyncThunk<
+  void,
+  MechanicSuggestionPayload
+>('mechanics/suggest', async (payload, { getState, rejectWithValue }) => {
+  try {
+    const token = (getState() as any).auth.token;
+    const url = buildUrl('/mechanics/suggestions/');
+    await apiFetchAuth<void>(url, token, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  } catch (err: any) {
+    return rejectWithValue(extractError(err));
+  }
+});
+
+// Slice
 
 const initialState: MechanicsState = {
   list: [],
@@ -116,6 +147,8 @@ const initialState: MechanicsState = {
   detailLoading: false,
   listError: null,
   detailError: null,
+  suggestLoading: false,
+  suggestError: null,
 };
 
 const mechanicsSlice = createSlice({
@@ -166,6 +199,20 @@ const mechanicsSlice = createSlice({
       .addCase(fetchMechanicDetail.rejected, (state, action) => {
         state.detailLoading = false;
         state.detailError = action.payload as string;
+      });
+
+    // Suggest
+    builder
+      .addCase(suggestMechanic.pending, state => {
+        state.suggestLoading = true;
+        state.suggestError = null;
+      })
+      .addCase(suggestMechanic.fulfilled, state => {
+        state.suggestLoading = false;
+      })
+      .addCase(suggestMechanic.rejected, (state, action) => {
+        state.suggestLoading = false;
+        state.suggestError = action.payload as string;
       });
   },
 });

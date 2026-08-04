@@ -13,9 +13,8 @@ interface PersonalInfo {
   gender: string;
 }
 
-// Updated interface — id is now required to match EmergencyContactCard
 interface EmergencyContact {
-  id: string; // ← new
+  id: string;
   name: string;
   relationship: string;
   phone: string;
@@ -33,11 +32,11 @@ export const PersonalTab: React.FC<Props> = ({
   onEditPress,
 }) => {
   const contactFields = [
-    { label: 'First Name', value: personalInfo.firstName },
-    { label: 'Last Name', value: personalInfo.lastName },
-    { label: 'Phone Number', value: personalInfo.phone },
-    { label: 'Email Address', value: personalInfo.email },
-    { label: 'Gender', value: personalInfo.gender },
+    { label: 'First Name', value: personalInfo.firstName, maskable: true },
+    { label: 'Last Name', value: personalInfo.lastName, maskable: true },
+    { label: 'Phone Number', value: personalInfo.phone, maskable: true },
+    { label: 'Email Address', value: personalInfo.email, maskable: true },
+    { label: 'Gender', value: personalInfo.gender, maskable: true },
   ];
 
   return (
@@ -56,7 +55,6 @@ export const PersonalTab: React.FC<Props> = ({
           />
         ))
       ) : (
-        // Placeholder when no contacts added yet
         <View style={styles.emptyContactCard}>
           <View style={styles.emptyIconWrapper}>
             <Phone size={20} color="#9CA3AF" strokeWidth={1.8} />
@@ -70,7 +68,6 @@ export const PersonalTab: React.FC<Props> = ({
         </View>
       )}
 
-      {/* Edit button at the bottom of the personal tab */}
       <View style={styles.editFooter}>
         <TouchableOpacity
           style={styles.editButton}

@@ -21,6 +21,7 @@ export interface ChatRoomDetail {
   id: string;
   name: string;
   memberCount: number;
+  avatarUrl?: string;
   rulesText?: string;
   messages: ChatMessage[];
 }

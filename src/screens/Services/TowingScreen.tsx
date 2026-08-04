@@ -6,24 +6,28 @@ import {
   StatusBar,
   ActivityIndicator,
   Text,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ServicesStackParamList } from '../../navigation/ServicesStack';
+import { Plus } from 'lucide-react-native';
 
 import {
   fetchTowingProviders,
+  suggestTowing,
   clearErrors,
 } from '../../redux/slices/services/towingSlice';
 
 import { FilterChips, FilterChip } from './components/FilterChips';
 import { ScreenHeader } from './components/ScreenHeader';
-import { MapFAB } from './components/MapFAB';
 import { EmergencyBanner } from './components/towing/EmergencyBanner';
 import { TowingCard } from './components/towing/TowingCard';
 import { SafetyFooter } from './components/towing/SafetyFooter';
+import { SuggestTowingModal } from './components/towing/SuggestTowingModal';
 import { useAppDispatch, useAppSelector } from '../../redux/hooks';
+import { useTabBarClearance } from '../../components/CustomTabBar';
 
 const TYPE_FILTERS: FilterChip[] = [
   { id: 'all', label: 'All' },
@@ -36,9 +40,11 @@ export default function TowingScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<ServicesStackParamList>>();
   const dispatch = useAppDispatch();
+  const tabBarClearance = useTabBarClearance();
 
   const { list, listLoading, listError } = useAppSelector(s => s.towing);
   const [activeType, setActiveType] = useState('all');
+  const [suggestModalVisible, setSuggestModalVisible] = useState(false);
 
   useEffect(() => {
     dispatch(fetchTowingProviders({ type: activeType }));
@@ -46,6 +52,16 @@ export default function TowingScreen() {
       dispatch(clearErrors());
     };
   }, [activeType]);
+
+  const handleSuggestSubmit = async (payload: {
+    name: string;
+    phone: string;
+    location: string;
+    vehicleType: string;
+    reason: string;
+  }) => {
+    await dispatch(suggestTowing(payload)).unwrap();
+  };
 
   const chipFilters = TYPE_FILTERS.map(f => ({
     ...f,
@@ -115,7 +131,19 @@ export default function TowingScreen() {
         }
       />
 
-      <MapFAB onPress={() => {}} />
+      <TouchableOpacity
+        style={[styles.fab, { bottom: tabBarClearance }]}
+        onPress={() => setSuggestModalVisible(true)}
+        activeOpacity={0.85}
+      >
+        <Plus size={24} color="#FFFFFF" />
+      </TouchableOpacity>
+
+      <SuggestTowingModal
+        visible={suggestModalVisible}
+        onClose={() => setSuggestModalVisible(false)}
+        onSubmit={handleSuggestSubmit}
+      />
     </SafeAreaView>
   );
 }
@@ -137,5 +165,20 @@ const styles = StyleSheet.create({
     marginTop: 48,
     color: '#9CA3AF',
     fontSize: 14,
+  },
+  fab: {
+    position: 'absolute',
+    right: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
   },
 });

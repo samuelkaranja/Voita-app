@@ -27,6 +27,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SectionHeader } from './SectionHeader';
 import { MaintenanceCard } from './MaintenanceCard';
 import { ProfileStackParamList } from '../../../../navigation/ProfileStack';
+import { VehicleBenefitsBanner } from '../vehicle/VehicleBenefitsBanner';
+//import { VehicleBenefitsBanner } from './VehicleBenefitsBanner';
 
 type NavProp = NativeStackNavigationProp<ProfileStackParamList>;
 
@@ -458,6 +460,9 @@ export const VehicleTab: React.FC<Props> = ({
           </ScrollView>
         </View>
       )}
+
+      {/* Value-prop banner — why adding vehicle info matters */}
+      <VehicleBenefitsBanner />
 
       {/* Rich hero card */}
       <VehicleDetailHero vehicle={selectedVehicle} />

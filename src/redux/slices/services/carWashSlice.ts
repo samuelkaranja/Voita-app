@@ -1,7 +1,12 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { apiFetch, buildUrl, extractError } from '../../../services/api';
+import {
+  apiFetch,
+  apiFetchAuth,
+  buildUrl,
+  extractError,
+} from '../../../services/api';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// Types
 
 export interface CarWashService {
   id: string;
@@ -54,6 +59,14 @@ export interface CarWashFilters {
   lng?: number;
 }
 
+export interface CarWashSuggestionPayload {
+  name: string;
+  phone: string;
+  location: string;
+  serviceType: string; // Interior | Exterior | Full Detail
+  reason: string;
+}
+
 interface CarWashState {
   list: CarWashListItem[];
   detail: CarWashDetail | null;
@@ -62,6 +75,8 @@ interface CarWashState {
   detailLoading: boolean;
   listError: string | null;
   detailError: string | null;
+  suggestLoading: boolean;
+  suggestError: string | null;
 }
 
 // ── Thunks ────────────────────────────────────────────────────────────────────
@@ -95,7 +110,23 @@ export const fetchCarWashDetail = createAsyncThunk<CarWashDetail, string>(
   },
 );
 
-// ── Slice ─────────────────────────────────────────────────────────────────────
+export const suggestCarWash = createAsyncThunk<void, CarWashSuggestionPayload>(
+  'carwash/suggest',
+  async (payload, { getState, rejectWithValue }) => {
+    try {
+      const token = (getState() as any).auth.token;
+      const url = buildUrl('/car-washes/suggestions/');
+      await apiFetchAuth<void>(url, token, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    } catch (err: any) {
+      return rejectWithValue(extractError(err));
+    }
+  },
+);
+
+// Slice
 
 const initialState: CarWashState = {
   list: [],
@@ -105,6 +136,8 @@ const initialState: CarWashState = {
   detailLoading: false,
   listError: null,
   detailError: null,
+  suggestLoading: false,
+  suggestError: null,
 };
 
 const carWashSlice = createSlice({
@@ -153,6 +186,19 @@ const carWashSlice = createSlice({
       .addCase(fetchCarWashDetail.rejected, (state, action) => {
         state.detailLoading = false;
         state.detailError = action.payload as string;
+      });
+
+    builder
+      .addCase(suggestCarWash.pending, state => {
+        state.suggestLoading = true;
+        state.suggestError = null;
+      })
+      .addCase(suggestCarWash.fulfilled, state => {
+        state.suggestLoading = false;
+      })
+      .addCase(suggestCarWash.rejected, (state, action) => {
+        state.suggestLoading = false;
+        state.suggestError = action.payload as string;
       });
   },
 });

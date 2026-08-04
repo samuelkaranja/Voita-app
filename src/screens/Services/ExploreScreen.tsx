@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   ScrollView,
@@ -6,9 +6,16 @@ import {
   StatusBar,
   ActivityIndicator,
   Text,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Wrench, Droplets, Truck, UserRound } from 'lucide-react-native';
+import {
+  Wrench,
+  Droplets,
+  Truck,
+  UserRound,
+  MapPin,
+} from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -61,6 +68,7 @@ const PARAM_KEYS: Record<ServiceCategory, string> = {
 export default function ExploreScreen() {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useAppDispatch();
+  const [filterByLocation, setFilterByLocation] = useState(false);
 
   const { topRated, recentlyAdded, loading, error } = useAppSelector(
     s => s.explore,
@@ -87,8 +95,35 @@ export default function ExploreScreen() {
 
       {/* Screen header tag */}
       <View style={styles.headerTag}>
-        <Text style={styles.headerTitle}>Explore</Text>
-        <Text style={styles.headerSubtitle}>Find services near you</Text>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.headerTitle}>Explore</Text>
+            <Text style={styles.headerSubtitle}>Find services near you</Text>
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.locationToggle,
+              filterByLocation && styles.locationToggleActive,
+            ]}
+            onPress={() => setFilterByLocation(prev => !prev)}
+            activeOpacity={0.7}
+          >
+            <MapPin
+              size={14}
+              color={filterByLocation ? '#FFFFFF' : '#10B981'}
+              strokeWidth={2.5}
+            />
+            <Text
+              style={[
+                styles.locationToggleText,
+                filterByLocation && styles.locationToggleTextActive,
+              ]}
+            >
+              Near me
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -198,6 +233,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 4,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  locationToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#10B981',
+    backgroundColor: '#FFFFFF',
+  },
+  locationToggleActive: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  locationToggleText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#10B981',
+  },
+  locationToggleTextActive: {
+    color: '#FFFFFF',
   },
   headerTitle: {
     fontSize: 26,

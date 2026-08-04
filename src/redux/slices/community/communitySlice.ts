@@ -68,6 +68,7 @@ export const fetchCommunityRooms = createAsyncThunk(
         headers: { Authorization: `Bearer ${token}` },
       });
       debugResponse('GET /community/rooms/', res.data);
+      console.log('Community Room:', res.data);
 
       return {
         general: (res.data.general ?? []).map(mapCommunityRoom),

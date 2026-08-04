@@ -52,7 +52,12 @@ export default function CommunityScreen() {
 
   const openRoom = useCallback(
     (room: CommunityRoom) => {
-      navigation.navigate('ChatRoom', { roomId: room.id, roomName: room.name });
+      navigation.navigate('ChatRoom', {
+        roomId: room.id,
+        roomName: room.name,
+        memberCount: room.memberCount,
+        avatarUrl: room.iconUrl,
+      });
     },
     [navigation],
   );
@@ -79,7 +84,7 @@ export default function CommunityScreen() {
   if (!isLoadingRooms && generalRooms.length === 0 && brandRooms.length === 0) {
     return (
       <View style={styles.container}>
-        <CommunityHeader onSearchPress={() => {}} />
+        <CommunityHeader onSearchPress={() => {}} showBackButton={false} />
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>No rooms yet</Text>
           <Text style={styles.emptySubtitle}>
@@ -139,7 +144,7 @@ export default function CommunityScreen() {
 
   return (
     <View style={styles.container}>
-      <CommunityHeader onSearchPress={() => {}} />
+      <CommunityHeader onSearchPress={() => {}} showBackButton={false} />
       <FlatList
         data={items}
         keyExtractor={item => item.id}

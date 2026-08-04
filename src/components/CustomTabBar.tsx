@@ -21,6 +21,7 @@ import {
   FileText,
   User,
 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { generatePath } from '../utils/tabBarPath';
 
@@ -35,6 +36,25 @@ const icons: any = {
   Claims: FileText,
   Profile: User,
 };
+
+// Tab bar layout constants — kept in one place so anything
+// positioning UI above the tab bar can stay in sync automatically.
+const TAB_ICON_ROW_HEIGHT = 65;
+const ACTIVE_CIRCLE_RISE = 35; // activeCircle's `top: -35`
+const ACTIVE_CIRCLE_RADIUS = 25; // half of activeCircle's 50px size
+const CLEARANCE_MARGIN = 15; // breathing room above the circle
+
+export function useTabBarClearance() {
+  const insets = useSafeAreaInsets();
+  return (
+    TAB_ICON_ROW_HEIGHT +
+    insets.bottom +
+    15 +
+    ACTIVE_CIRCLE_RISE +
+    ACTIVE_CIRCLE_RADIUS +
+    CLEARANCE_MARGIN
+  );
+}
 
 // 1. Extracted Tab Item to legally use Hooks safely per-tab
 function TabItem({ route, isFocused, onPress }: any) {
@@ -76,24 +96,33 @@ function TabItem({ route, isFocused, onPress }: any) {
   );
 }
 
-export default function CustomTabBar({ state, navigation }: any) {
+export default function CustomTabBar({ state, navigation, descriptors }: any) {
+  const focusedOptions = descriptors[state.routes[state.index].key].options;
+  const insets = useSafeAreaInsets();
   const tabWidth = width / state.routes.length;
+  const totalHeight = TAB_ICON_ROW_HEIGHT + insets.bottom + 15; // icon row + safe area + original design margin, counted once
+
+  if (focusedOptions.tabBarStyle?.display === 'none') {
+    return null;
+  }
 
   return (
-    <View style={styles.wrapper}>
-      {/* Curved background */}
-      <Svg width={width} height={80} style={styles.svg}>
+    <View style={[styles.wrapper, { height: totalHeight }]}>
+      <Svg width={width} height={totalHeight} style={styles.svg}>
         <Path
-          d={generatePath(width, 80, tabWidth, state.index)}
+          d={generatePath(width, totalHeight, tabWidth, state.index)}
           fill="#F5F5F5"
         />
       </Svg>
 
-      {/* Tabs Layout */}
-      <View style={styles.tabs}>
+      <View
+        style={[
+          styles.tabs,
+          { height: totalHeight, paddingBottom: insets.bottom + 15 },
+        ]}
+      >
         {state.routes.map((route: any, index: number) => {
           const isFocused = state.index === index;
-
           return (
             <TabItem
               key={route.key}
@@ -134,7 +163,7 @@ const styles = StyleSheet.create({
   iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100%',
+    //height: '100%',
   },
   iconContainer: {
     height: 20, // Fixed height space so things don't jump when switching
@@ -148,7 +177,7 @@ const styles = StyleSheet.create({
   },
   activeCircle: {
     position: 'absolute',
-    top: -35, // Raised slightly to sit perfectly inside the SVG curve dip
+    top: -ACTIVE_CIRCLE_RISE,
     width: 50,
     height: 50,
     borderRadius: 25,

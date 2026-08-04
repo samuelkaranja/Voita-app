@@ -5,6 +5,7 @@ import { InfoField } from './InfoField';
 interface Field {
   label: string;
   value: string;
+  maskable?: boolean;
 }
 
 interface Props {
@@ -20,6 +21,7 @@ export const InfoCard: React.FC<Props> = ({ fields }) => {
           label={field.label}
           value={field.value}
           isLast={index === fields.length - 1}
+          maskable={field.maskable}
         />
       ))}
     </View>

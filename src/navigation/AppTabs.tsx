@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 
 import CustomTabBar from '../components/CustomTabBar';
 
@@ -9,6 +10,11 @@ import ServicesStack from './ServicesStack';
 import CommunityStack from './CommunityStack';
 
 const Tab = createBottomTabNavigator();
+
+function getCommunityTabBarStyle(route: any) {
+  const routeName = getFocusedRouteNameFromRoute(route) ?? 'CommunityRooms';
+  return routeName === 'ChatRoom' ? { display: 'none' as const } : undefined;
+}
 
 export default function AppTabs() {
   return (
@@ -28,7 +34,10 @@ export default function AppTabs() {
       <Tab.Screen
         name="Community"
         component={CommunityStack}
-        options={{ headerShown: false }}
+        options={({ route }) => ({
+          headerShown: false,
+          tabBarStyle: getCommunityTabBarStyle(route),
+        })}
       />
 
       <Tab.Screen

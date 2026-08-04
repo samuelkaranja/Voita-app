@@ -36,6 +36,7 @@ import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useTurnByTurn } from '../../hooks/useTurnByTurn';
 import { useVoiceGuide } from '../../hooks/useVoiceGuide';
 import TurnByTurnBanner from './components/TurnByTurnBanner';
+import { useTabBarClearance } from '../../components/CustomTabBar';
 
 /* ........ Types ........ */
 
@@ -137,6 +138,8 @@ export default function HomeScreen() {
     isLastStep,
     isNavigating && hasSteps,
   );
+
+  const tabBarClearance = useTabBarClearance();
 
   const safety = safeRouteInfo?.safetyInsights;
 
@@ -409,7 +412,10 @@ export default function HomeScreen() {
 
       {/* Top Overlay */}
       {initialLocation && (
-        <View style={styles.overlay} pointerEvents="box-none">
+        <View
+          style={[styles.overlay, { top: insets.top + 10 }]}
+          pointerEvents="box-none"
+        >
           {/* Top row — TagSelector only */}
           <View style={styles.topRow}>
             <TagSelector
@@ -483,7 +489,7 @@ export default function HomeScreen() {
 
       {/* Bottom Right — Bell + Alerts + Speed */}
       {initialLocation && (
-        <View style={[styles.bottomRight, { bottom: insets.bottom + 170 }]}>
+        <View style={[styles.bottomRight, { bottom: tabBarClearance + 75 }]}>
           {/* Alerts panel — expands upward */}
           {alertsExpanded && (
             <View style={styles.alertsPanel}>
@@ -544,7 +550,7 @@ export default function HomeScreen() {
       )}
 
       {/* Destination */}
-      <DestinationCard style={{ bottom: insets.bottom + 95 }} />
+      <DestinationCard style={{ bottom: tabBarClearance }} />
 
       {/* Safety Bottom Sheet */}
       <BottomSheet
@@ -624,7 +630,6 @@ const styles = StyleSheet.create({
   /* Top Overlay */
   overlay: {
     position: 'absolute',
-    top: 10,
     left: 0,
     right: 0,
     paddingHorizontal: 16,

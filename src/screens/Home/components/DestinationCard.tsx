@@ -12,16 +12,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { Navigation } from 'lucide-react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { setDestination } from '../../../redux/slices/map/mapsSlice';
 import { store } from '../../../redux/store';
 
 const GOOGLE_KEY = 'AIzaSyDAaZnQ6p4Zase38K03Rk8LbCyGlfmaUCg';
 
-// 1. ADD THE style PROP HERE
 export default function DestinationCard({ style }: { style?: any }) {
   const dispatch = useDispatch();
   const userPhone = useSelector((state: any) => state.auth.user?.phone);
+  const insets = useSafeAreaInsets();
 
   const [text, setText] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -45,9 +46,7 @@ export default function DestinationCard({ style }: { style?: any }) {
     });
   }, [HISTORY_KEY]);
 
-  // =========================
-  // AUTOCOMPLETE
-  // =========================
+  // Autocomplete
   useEffect(() => {
     if (text.length < 2) {
       setSuggestions([]);
@@ -86,9 +85,7 @@ export default function DestinationCard({ style }: { style?: any }) {
     return () => clearTimeout(timeout);
   }, [text]);
 
-  // =========================
-  // PLACE DETAILS
-  // =========================
+  // Place Details
   const selectPlace = async (place: any) => {
     try {
       const res = await fetch(
@@ -107,7 +104,6 @@ export default function DestinationCard({ style }: { style?: any }) {
         return;
       }
 
-      // Read current destination from Redux to avoid re-dispatching same place
       const currentDestination = store.getState().maps.destination;
       const isSameDestination =
         currentDestination?.latitude === location.lat &&
@@ -147,9 +143,6 @@ export default function DestinationCard({ style }: { style?: any }) {
     }
   };
 
-  // =========================
-  // 🔥 NAV ICON CLICK (IMPORTANT FIX)
-  // =========================
   const handleConfirmDestination = async () => {
     if (!text.trim()) return;
 
@@ -187,7 +180,6 @@ export default function DestinationCard({ style }: { style?: any }) {
   };
 
   return (
-    // 2. COMBINE THE BASE CONTAINER STYLE WITH THE PASSED IN DYNAMIC STYLE
     <View style={[styles.container, style]}>
       <Text style={styles.title}>Destination</Text>
 
@@ -217,6 +209,7 @@ export default function DestinationCard({ style }: { style?: any }) {
           <FlatList
             data={suggestions}
             keyExtractor={item => item.place_id}
+            keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
               <Pressable
                 onPress={() => selectPlace(item)}
@@ -247,6 +240,7 @@ export default function DestinationCard({ style }: { style?: any }) {
             <FlatList
               data={history}
               keyExtractor={item => item.place_id}
+              keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
                 <Pressable
                   onPress={() => {

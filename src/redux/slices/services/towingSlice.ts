@@ -1,7 +1,12 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { apiFetch, buildUrl, extractError } from '../../../services/api';
+import {
+  apiFetch,
+  apiFetchAuth,
+  buildUrl,
+  extractError,
+} from '../../../services/api';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// Types
 
 export interface TowingService {
   id: string;
@@ -68,6 +73,14 @@ export interface TowingFilters {
   lng?: number;
 }
 
+export interface TowingSuggestionPayload {
+  name: string;
+  phone: string;
+  location: string;
+  vehicleType: string; // Flatbed | Roadside | Heavy Duty
+  reason: string;
+}
+
 interface TowingState {
   list: TowingListItem[];
   detail: TowingDetail | null;
@@ -76,9 +89,11 @@ interface TowingState {
   detailLoading: boolean;
   listError: string | null;
   detailError: string | null;
+  suggestLoading: boolean;
+  suggestError: string | null;
 }
 
-// ── Thunks ────────────────────────────────────────────────────────────────────
+// Thunks
 
 export const fetchTowingProviders = createAsyncThunk<
   TowingListItem[],
@@ -109,7 +124,23 @@ export const fetchTowingDetail = createAsyncThunk<TowingDetail, string>(
   },
 );
 
-// ── Slice ─────────────────────────────────────────────────────────────────────
+export const suggestTowing = createAsyncThunk<void, TowingSuggestionPayload>(
+  'towing/suggest',
+  async (payload, { getState, rejectWithValue }) => {
+    try {
+      const token = (getState() as any).auth.token;
+      const url = buildUrl('/towing-providers/suggestions/');
+      await apiFetchAuth<void>(url, token, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    } catch (err: any) {
+      return rejectWithValue(extractError(err));
+    }
+  },
+);
+
+// Slice
 
 const initialState: TowingState = {
   list: [],
@@ -119,6 +150,8 @@ const initialState: TowingState = {
   detailLoading: false,
   listError: null,
   detailError: null,
+  suggestLoading: false,
+  suggestError: null,
 };
 
 const towingSlice = createSlice({
@@ -167,6 +200,19 @@ const towingSlice = createSlice({
       .addCase(fetchTowingDetail.rejected, (state, action) => {
         state.detailLoading = false;
         state.detailError = action.payload as string;
+      });
+
+    builder
+      .addCase(suggestTowing.pending, state => {
+        state.suggestLoading = true;
+        state.suggestError = null;
+      })
+      .addCase(suggestTowing.fulfilled, state => {
+        state.suggestLoading = false;
+      })
+      .addCase(suggestTowing.rejected, (state, action) => {
+        state.suggestLoading = false;
+        state.suggestError = action.payload as string;
       });
   },
 });

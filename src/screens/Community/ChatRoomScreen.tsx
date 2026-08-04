@@ -1,10 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import {
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-} from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../../redux/hooks';
 import ChatHeader from './components/chat/ChatHeader';
@@ -14,6 +9,7 @@ import ChatInputBar from './components/chat/ChatInputBar';
 import { colors } from '../../theme/colors';
 import {
   fetchRoomMessages,
+  seedRoomMeta,
   sendTextMessage,
 } from '../../redux/slices/chat/chatSlice';
 import { CommunityStackParamList } from '../../navigation/CommunityStack';
@@ -22,17 +18,31 @@ type ChatRoomRouteProp = RouteProp<CommunityStackParamList, 'ChatRoom'>;
 
 export default function ChatRoomScreen() {
   const { params } = useRoute<ChatRoomRouteProp>();
-  const { roomId, roomName } = params;
+  const {
+    roomId,
+    roomName,
+    memberCount: memberCountParam,
+    avatarUrl: avatarUrlParam,
+  } = params;
   const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    dispatch(
+      seedRoomMeta({
+        roomId,
+        roomName,
+        memberCount: memberCountParam,
+        avatarUrl: avatarUrlParam,
+      }),
+    );
+    dispatch(fetchRoomMessages(roomId));
+  }, [dispatch, roomId, roomName, memberCountParam, avatarUrlParam]);
 
   const room = useAppSelector(state => state.chat.roomsById[roomId]);
   const messages = room?.messages ?? [];
-  const memberCount = room?.memberCount ?? 0;
+  const memberCount = room?.memberCount ?? memberCountParam ?? 0;
+  const avatarUrl = room?.avatarUrl ?? avatarUrlParam;
   const rulesText = room?.rulesText ?? 'Be respectful — road safety tips only';
-
-  useEffect(() => {
-    dispatch(fetchRoomMessages(roomId));
-  }, [dispatch, roomId]);
 
   const handleSend = useCallback(
     (text: string) => dispatch(sendTextMessage({ roomId, text })),
@@ -40,23 +50,24 @@ export default function ChatRoomScreen() {
   );
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
-      <ChatHeader roomName={roomName} memberCount={memberCount} />
+    <View style={styles.container}>
+      <ChatHeader
+        roomName={roomName}
+        memberCount={memberCount}
+        avatarUrl={avatarUrl}
+      />
       <RulesBanner text={rulesText} />
 
       <FlatList
         data={messages}
         keyExtractor={message => message.id}
         renderItem={({ item }) => <MessageBubble message={item} />}
+        style={styles.list}
         contentContainerStyle={styles.listContent}
       />
 
       <ChatInputBar roomName={roomName} onSend={handleSend} />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -64,7 +75,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingBottom: 88,
   },
+  list: { flex: 1 },
   listContent: { paddingVertical: 16 },
 });

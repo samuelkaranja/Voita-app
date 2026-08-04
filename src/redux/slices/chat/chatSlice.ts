@@ -75,7 +75,26 @@ export const sendTextMessage = createAsyncThunk(
 const chatSlice = createSlice({
   name: 'chat',
   initialState,
-  reducers: {},
+  reducers: {
+    seedRoomMeta(
+      state,
+      action: PayloadAction<{
+        roomId: string;
+        roomName: string;
+        memberCount?: number;
+        avatarUrl?: string;
+      }>,
+    ) {
+      const { roomId, roomName, memberCount, avatarUrl } = action.payload;
+      const existing = state.roomsById[roomId];
+      state.roomsById[roomId] = {
+        ...(existing ?? { id: roomId, messages: [] }),
+        name: existing?.name ?? roomName,
+        memberCount: memberCount ?? existing?.memberCount,
+        avatarUrl: avatarUrl ?? existing?.avatarUrl,
+      } as ChatRoomDetail;
+    },
+  },
   extraReducers: builder => {
     builder
       .addCase(fetchRoomMessages.pending, state => {
@@ -85,7 +104,13 @@ const chatSlice = createSlice({
         fetchRoomMessages.fulfilled,
         (state, action: PayloadAction<ChatRoomDetail>) => {
           state.isLoadingMessages = false;
-          state.roomsById[action.payload.id] = action.payload;
+          const existing = state.roomsById[action.payload.id];
+          state.roomsById[action.payload.id] = {
+            ...existing,
+            ...action.payload,
+            memberCount: action.payload.memberCount ?? existing?.memberCount,
+            avatarUrl: action.payload.avatarUrl ?? existing?.avatarUrl,
+          };
         },
       )
       .addCase(fetchRoomMessages.rejected, (state, action) => {
@@ -99,4 +124,5 @@ const chatSlice = createSlice({
   },
 });
 
+export const { seedRoomMeta } = chatSlice.actions;
 export default chatSlice.reducer;

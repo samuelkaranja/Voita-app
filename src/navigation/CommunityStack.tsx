@@ -8,7 +8,12 @@ import ChatRoomScreen from '../screens/Community/ChatRoomScreen';
 export type CommunityStackParamList = {
   CommunityRooms: undefined;
   BrowseRooms: undefined;
-  ChatRoom: { roomId: string; roomName: string };
+  ChatRoom: {
+    roomId: string;
+    roomName: string;
+    memberCount?: number;
+    avatarUrl?: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<CommunityStackParamList>();

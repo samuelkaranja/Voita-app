@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -87,6 +88,11 @@ export default function LoginScreen() {
             <View style={styles.form}>
               {/* HEADER */}
               <View style={styles.header}>
+                <Image
+                  source={require('../../assets/voita.png')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
                 <Text style={styles.title}>Welcome back</Text>
                 <Text style={styles.subtitle}>
                   Sign in and continue to enjoy Voita
@@ -187,6 +193,12 @@ const styles = StyleSheet.create({
   /* HEADER */
   header: {
     marginBottom: 40,
+  },
+  logo: {
+    width: 88,
+    height: 88,
+    alignSelf: 'center',
+    marginBottom: 16,
   },
   title: {
     fontSize: 35,
