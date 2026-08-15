@@ -59,10 +59,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.cardBackground,
-    borderRadius: 16,
+    borderRadius: 10,
     padding: 12,
     marginHorizontal: 16,
-    marginBottom: 10,
+    marginBottom: 3,
   },
   pressed: { opacity: 0.85 },
   avatar: {

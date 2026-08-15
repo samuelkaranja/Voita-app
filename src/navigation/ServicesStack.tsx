@@ -11,6 +11,7 @@ import TowingDetailScreen from '../screens/Services/TowingDetailScreen';
 import CarWashDetailScreen from '../screens/Services/CarWashDetailScreen';
 import ScoutsScreen from '../screens/Services/ScoutsScreen';
 import ScoutProfileScreen from '../screens/Services/ScoutProfileScreen';
+import SuggestServiceScreen from '../screens/Services/SuggestServiceScreen';
 
 export type ServicesStackParamList = {
   ExploreScreen: undefined;
@@ -23,6 +24,7 @@ export type ServicesStackParamList = {
   CarWashDetail: { carWashId: string };
   ScoutsScreen: undefined;
   ScoutProfile: { scoutId: string };
+  SuggestService: undefined;
 };
 
 const Stack = createNativeStackNavigator<ServicesStackParamList>();
@@ -78,6 +80,11 @@ export default function ServicesStack() {
       <Stack.Screen
         name="ScoutProfile"
         component={ScoutProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SuggestService"
+        component={SuggestServiceScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

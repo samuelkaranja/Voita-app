@@ -7,12 +7,18 @@ import IntroScreen from '../screens/Auth/IntroScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
 import SignUpScreen from '../screens/Auth/SignUpScreen';
 import OtpScreen from '../screens/Auth/OtpScreen';
+import { ForgotPasswordScreen } from '../screens/Auth/ForgotPasswordScreen';
+import { EnterVerificationScreen } from '../screens/Auth/EnterVerificationScreen';
+import { CreateNewPasswordScreen } from '../screens/Auth/CreateNewPasswordScreen';
 
 export type AuthStackParamList = {
   Intro: undefined;
   Login: undefined;
   SignUp: undefined;
   OTP: undefined;
+  ForgotPassword: undefined;
+  EnterVerificationCode: { phone: string };
+  CreateNewPassword: { phone: string; resetToken: string };
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -53,6 +59,15 @@ export default function AuthStack() {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="SignUp" component={SignUpScreen} />
       <Stack.Screen name="OTP" component={OtpScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <Stack.Screen
+        name="EnterVerificationCode"
+        component={EnterVerificationScreen}
+      />
+      <Stack.Screen
+        name="CreateNewPassword"
+        component={CreateNewPasswordScreen}
+      />
     </Stack.Navigator>
   );
 }

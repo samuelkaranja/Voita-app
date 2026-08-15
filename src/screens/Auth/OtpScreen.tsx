@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -17,17 +17,24 @@ import Toast from 'react-native-toast-message';
 
 export default function OtpScreen() {
   const [otp, setOtp] = useState(['', '', '', '']);
+  const [cooldown, setCooldown] = useState(0); // NEW
+
   const verifyLoading = useSelector(
     (state: any) => state.auth.loading.verifyOtp,
   );
-
   const resendLoading = useSelector((state: any) => state.auth.loading.sendOtp);
 
   const inputs = useRef<Array<TextInput | null>>([]);
-
   const dispatch = useDispatch<any>();
   const navigation = useNavigation<any>();
   const phone = useSelector((state: any) => state.auth.phone);
+
+  //cooldown ticker
+  useEffect(() => {
+    if (cooldown === 0) return;
+    const id = setInterval(() => setCooldown(c => Math.max(c - 1, 0)), 1000);
+    return () => clearInterval(id);
+  }, [cooldown]);
 
   const handleChange = (text: string, index: number) => {
     if (!/^\d*$/.test(text)) return; // Only numbers
@@ -71,8 +78,9 @@ export default function OtpScreen() {
   };
 
   const handleResend = () => {
+    if (cooldown > 0) return; // NEW
     dispatch(sendOtp(phone));
-
+    setCooldown(30); // NEW
     Toast.show({
       type: 'info',
       text1: 'OTP Sent',
@@ -128,11 +136,16 @@ export default function OtpScreen() {
           </TouchableOpacity>
 
           {/* Resend */}
-          <TouchableOpacity onPress={handleResend} disabled={resendLoading}>
+          <TouchableOpacity
+            onPress={handleResend}
+            disabled={resendLoading || cooldown > 0}
+          >
             {resendLoading ? (
               <ActivityIndicator />
             ) : (
-              <Text style={styles.resendText}>Resend OTP</Text>
+              <Text style={styles.resendText}>
+                {cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Resend OTP'}
+              </Text>
             )}
           </TouchableOpacity>
         </View>

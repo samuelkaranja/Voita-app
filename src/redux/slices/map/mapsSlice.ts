@@ -290,6 +290,36 @@ export const fetchSafeRoute = createAsyncThunk(
         insights.lowStepPenalty = true;
       }
 
+      // ── Signal E: Washroom-friendly stops along route ──
+      // Gas stations reliably have public washrooms in the Nairobi context
+      const WASHROOM_TYPES = ['gas_station'];
+      const washroomStops: string[] = [];
+
+      for (const point of samplePoints) {
+        try {
+          const washroomRes = await fetch(
+            `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
+              `?location=${point.lat},${point.lng}` +
+              `&radius=400` +
+              `&type=${WASHROOM_TYPES.join('|')}` +
+              `&key=${GOOGLE_KEY}`,
+          );
+          const washroomData = await washroomRes.json();
+          for (const place of washroomData.results ?? []) {
+            if (place?.name && !washroomStops.includes(place.name)) {
+              washroomStops.push(place.name);
+            }
+          }
+        } catch {
+          /* non-critical */
+        }
+      }
+
+      // Small bonus, capped so it doesn't dominate scoring
+      score += Math.min(washroomStops.length, 3) * 2;
+      insights.washroomStops = washroomStops.slice(0, 3);
+      console.log(`🚻 Washroom stops found: ${washroomStops.length}`);
+
       insights.finalScore = Math.round(score);
       return { score, insights };
     };
@@ -329,12 +359,12 @@ export const fetchSafeRoute = createAsyncThunk(
       highActivityAreas: (bestInsights.openNowCount ?? 0) > 2,
       avoidsHighRiskZones: !bestInsights.lowStepPenalty,
       congestionAvoided: true,
-      // Extended insights for richer UI
       litEstablishments: bestInsights.litEstablishments ?? 0,
       openNowCount: bestInsights.openNowCount ?? 0,
       waypointName: bestInsights.waypointName ?? null,
       nightMode: isNight,
       detourRatio: bestInsights.detourRatio ?? null,
+      washroomStops: bestInsights.washroomStops ?? [],
     };
 
     const steps: RouteStep[] = bestRoute.legs[0].steps.map((s: any) => ({
@@ -553,6 +583,7 @@ const mapsSlice = createSlice({
         waypointName: string | null;
         nightMode: boolean;
         detourRatio: number | null;
+        washroomStops: string[];
       },
     },
 

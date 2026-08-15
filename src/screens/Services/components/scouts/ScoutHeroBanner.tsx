@@ -40,8 +40,10 @@ export const ScoutHeroBanner: React.FC<ScoutHeroBannerProps> = ({
       {/* Headline */}
       <Text style={styles.headline}>Find Your Expert Scout</Text>
       <Text style={styles.subtitle}>
-        Instant access to vetted drivers, price auditors, and valet experts.
-        Consolidated intelligence for your automotive journey.
+        A Voita Scout is a trusted car expert who helps you take care of your
+        car with confidence. Whether you need someone to take your car to the
+        garage, assess a repair, give you a second opinion, or help you make a
+        smart decision when buying a car, your Scout is there to help.
       </Text>
 
       {/* Search */}

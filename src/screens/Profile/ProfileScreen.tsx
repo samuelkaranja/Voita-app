@@ -9,10 +9,12 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { ChevronLeft, Pencil, LogOut, Car } from 'lucide-react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { sendVerificationEmail } from '../../redux/slices/auth/authSlice';
+import { EmailVerificationBanner } from './components/profile/EmailVerificationBanner';
 import Toast from 'react-native-toast-message';
 
 import { ProfileStackParamList } from '../../navigation/ProfileStack';
@@ -20,6 +22,7 @@ import {
   fetchProfile,
   fetchEmergencyContacts,
   fetchVehicles,
+  fetchVerificationStatus,
   clearProfileError,
   resetProfile,
   Vehicle as BackendVehicle,
@@ -178,7 +181,7 @@ const mapBackendVehicleToUI = (vehicle?: BackendVehicle): VehicleInfo => {
   };
 };
 
-// ── Main screen ───────────────────────────────────────────────────────────────
+// Main screen
 export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const dispatch = useDispatch<any>();
@@ -192,6 +195,7 @@ export const ProfileScreen: React.FC = () => {
     emergencyContacts,
     vehicles,
     primaryVehicleId,
+    verificationStatus,
     loading,
     error,
   } = useSelector((state: any) => state.profile);
@@ -199,6 +203,9 @@ export const ProfileScreen: React.FC = () => {
   const authUser = useSelector((state: any) => state.auth.user);
   const token = useSelector((state: any) => state.auth.token);
   const authLoading = useSelector((state: any) => state.auth.loading.init);
+  const sendingVerification = useSelector(
+    (state: any) => state.auth.loading.sendVerificationEmail,
+  );
 
   // ── Fetch on mount — only when token is ready ─────────────────────────────
   useEffect(() => {
@@ -207,7 +214,20 @@ export const ProfileScreen: React.FC = () => {
     dispatch(fetchProfile());
     dispatch(fetchEmergencyContacts());
     dispatch(fetchVehicles());
+    dispatch(fetchVerificationStatus());
   }, [dispatch, token, authLoading]);
+
+  // ── Refetch profile on focus (picks up email verification after browser return) ──
+  const isFirstFocus = React.useRef(true);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isFirstFocus.current) {
+        isFirstFocus.current = false; // skip duplicate call on initial mount
+        return;
+      }
+      if (token) dispatch(fetchVerificationStatus());
+    }, [dispatch, token]),
+  );
 
   // ── Error toast — skip on first render ────────────────────────────────────
   const isMounted = React.useRef(false);
@@ -242,6 +262,25 @@ export const ProfileScreen: React.FC = () => {
   //     });
   //   }
   // };
+
+  const handleSendVerificationEmail = () => {
+    dispatch(sendVerificationEmail())
+      .unwrap()
+      .then(() => {
+        Toast.show({
+          type: 'success',
+          text1: 'Verification email sent',
+          text2: 'Check your inbox and tap the link.',
+        });
+      })
+      .catch((err: string) => {
+        Toast.show({
+          type: 'error',
+          text1: 'Could not send email',
+          text2: err,
+        });
+      });
+  };
 
   const handleLogout = () => {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
@@ -308,6 +347,12 @@ export const ProfileScreen: React.FC = () => {
                 imageUri={
                   profile?.profile_image_url ?? authUser?.profileImageUrl
                 }
+              />
+              <EmailVerificationBanner
+                email={authUser?.email ?? ''}
+                verified={verificationStatus?.email_verified ?? false}
+                sending={sendingVerification}
+                onVerify={handleSendVerificationEmail}
               />
               <PersonalTab
                 personalInfo={{

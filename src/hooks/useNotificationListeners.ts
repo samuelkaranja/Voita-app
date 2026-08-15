@@ -2,11 +2,22 @@ import { useEffect } from 'react';
 import messaging from '@react-native-firebase/messaging';
 import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
+import { useAppDispatch } from '../redux/hooks';
+import {
+  fetchCommunityRooms,
+  markRoomJoined,
+} from '../redux/slices/community/communitySlice';
 
 export const useNotificationListeners = () => {
   const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
 
   const handleNotificationNavigation = (data: any) => {
+    if (data?.type === 'chat_join_approved' && data?.roomId) {
+      dispatch(markRoomJoined(data.roomId));
+      dispatch(fetchCommunityRooms()); // pulls the room into brandRooms/generalRooms with full data
+    }
+
     if (data?.screen) {
       try {
         const params = data.params ? JSON.parse(data.params) : undefined;

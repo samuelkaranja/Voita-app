@@ -13,6 +13,8 @@ import Toast from 'react-native-toast-message';
 import { Navigation } from 'lucide-react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import { useKeyboardOffset } from '../../../hooks/useKeyboardOffset';
 
 import { setDestination } from '../../../redux/slices/map/mapsSlice';
 import { store } from '../../../redux/store';
@@ -21,12 +23,18 @@ const GOOGLE_KEY = 'AIzaSyDAaZnQ6p4Zase38K03Rk8LbCyGlfmaUCg';
 
 export default function DestinationCard({ style }: { style?: any }) {
   const dispatch = useDispatch();
+  const keyboardHeight = useKeyboardOffset();
+
   const userPhone = useSelector((state: any) => state.auth.user?.phone);
   const insets = useSafeAreaInsets();
 
   const [text, setText] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: -keyboardHeight.value }],
+  }));
 
   const HISTORY_KEY = userPhone
     ? `voita_destination_history_${userPhone}`
@@ -180,7 +188,7 @@ export default function DestinationCard({ style }: { style?: any }) {
   };
 
   return (
-    <View style={[styles.container, style]}>
+    <Animated.View style={[styles.container, style, animatedStyle]}>
       <Text style={styles.title}>Destination</Text>
 
       {/* INPUT */}
@@ -257,7 +265,7 @@ export default function DestinationCard({ style }: { style?: any }) {
           )}
         </View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 

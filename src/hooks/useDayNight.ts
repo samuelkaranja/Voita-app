@@ -19,7 +19,7 @@ const getSunTimes = (latitude: number, longitude: number) => {
 
   // Sunrise/sunset in UTC hours
   const sunriseUTC = solarNoonUTC - hourAngle / 15;
-  const sunsetUTC  = solarNoonUTC + hourAngle / 15;
+  const sunsetUTC = solarNoonUTC + hourAngle / 15;
 
   return { sunriseUTC, sunsetUTC };
 };

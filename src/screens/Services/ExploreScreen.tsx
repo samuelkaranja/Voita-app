@@ -15,7 +15,9 @@ import {
   Truck,
   UserRound,
   MapPin,
+  Plus,
 } from 'lucide-react-native';
+import { useTabBarClearance } from '../../components/CustomTabBar';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -31,7 +33,6 @@ import { SpecialistCard } from './components/SpecialistCard';
 import { NearbyServiceCard } from './components/NearbyServiceCard';
 import { SectionHeader } from './components/SectionHeader';
 import { CategoryBadge } from './components/CategoryBadge';
-import { MapFAB } from './components/MapFAB';
 
 type NavigationProp = NativeStackNavigationProp<ServicesStackParamList>;
 
@@ -77,6 +78,8 @@ export default function ExploreScreen() {
   useEffect(() => {
     dispatch(fetchExploreData());
   }, []);
+
+  const tabBarClearance = useTabBarClearance();
 
   const handleCategoryPress = (id: string) => {
     const route = CATEGORY_ROUTES[id];
@@ -219,7 +222,14 @@ export default function ExploreScreen() {
         <View style={{ height: 80 }} />
       </ScrollView>
 
-      <MapFAB onPress={() => {}} />
+      <TouchableOpacity
+        style={[styles.fab, { bottom: tabBarClearance }]}
+        onPress={() => navigation.navigate('SuggestService')}
+        activeOpacity={0.85}
+      >
+        <Plus size={24} color="#FFFFFF" />
+      </TouchableOpacity>
+      {/* <MapFAB onPress={() => {}} /> */}
     </SafeAreaView>
   );
 }
@@ -291,6 +301,21 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   nearbyList: { gap: 12 },
+  fab: {
+    position: 'absolute',
+    right: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
+  },
   loader: { marginTop: 32 },
   errorText: {
     textAlign: 'center',

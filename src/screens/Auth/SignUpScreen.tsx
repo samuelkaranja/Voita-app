@@ -43,7 +43,40 @@ export default function SignUpScreen() {
     setForm({ ...form, [key]: value });
   };
 
+  const isValidPhone = (phone: string) => {
+    const trimmed = phone.trim();
+    // Accepts 07XXXXXXXX, 2547XXXXXXXX, +2547XXXXXXXX
+    return /^(0\d{9}|(\+?254)\d{9})$/.test(trimmed);
+  };
+
   const handleSubmit = async () => {
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Missing info',
+        text2: 'Please enter your first and last name',
+      });
+      return;
+    }
+
+    if (!form.email.trim() || !/^\S+@\S+\.\S+$/.test(form.email.trim())) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid email',
+        text2: 'Please enter a valid email address',
+      });
+      return;
+    }
+
+    if (!isValidPhone(form.phone)) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid phone number',
+        text2: 'Enter a valid number, e.g. 07XXXXXXXX',
+      });
+      return;
+    }
+
     if (form.password !== form.confirmPassword) {
       Toast.show({
         type: 'error',
@@ -57,8 +90,6 @@ export default function SignUpScreen() {
       const res = await dispatch(registerUser(form));
 
       if (res.meta.requestStatus === 'fulfilled') {
-        await dispatch(sendOtp(form.phone));
-
         Toast.show({
           type: 'success',
           text1: 'Success',

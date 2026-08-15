@@ -6,17 +6,14 @@ import {
   StatusBar,
   ActivityIndicator,
   Text,
-  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ServicesStackParamList } from '../../navigation/ServicesStack';
-import { Plus } from 'lucide-react-native';
 
 import {
   fetchMechanics,
-  suggestMechanic,
   setFilters,
   clearErrors,
 } from '../../redux/slices/services//mechanicsSlice';
@@ -25,9 +22,7 @@ import { SearchBar } from './components/SearchBar';
 import { FilterChips, FilterChip } from './components/FilterChips';
 import { ScreenHeader } from './components/ScreenHeader';
 import { MechanicCard } from './components/mechanics/MechanicCard';
-import { SuggestMechanicModal } from './components/mechanics/SuggestMechanicModal';
 import { useAppDispatch, useAppSelector } from '../../redux/hooks';
-import { useTabBarClearance } from '../../components/CustomTabBar';
 
 type NavigationProp = NativeStackNavigationProp<ServicesStackParamList>;
 
@@ -42,7 +37,6 @@ const TYPE_FILTERS: FilterChip[] = [
 export default function MechanicsScreen() {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useAppDispatch();
-  const tabBarClearance = useTabBarClearance();
 
   const { list, listLoading, listError, filters } = useAppSelector(
     s => s.mechanics,
@@ -50,7 +44,6 @@ export default function MechanicsScreen() {
 
   const [search, setSearch] = useState('');
   const [activeType, setActiveType] = useState('all');
-  const [suggestModalVisible, setSuggestModalVisible] = useState(false);
 
   useEffect(() => {
     dispatch(
@@ -82,16 +75,6 @@ export default function MechanicsScreen() {
 
   const handleTypeChange = (id: string) => {
     setActiveType(id);
-  };
-
-  const handleSuggestSubmit = async (payload: {
-    name: string;
-    phone: string;
-    location: string;
-    specialty: string;
-    reason: string;
-  }) => {
-    await dispatch(suggestMechanic(payload)).unwrap();
   };
 
   const chipFilters = TYPE_FILTERS.map(f => ({
@@ -157,20 +140,6 @@ export default function MechanicsScreen() {
           )
         }
       />
-
-      <TouchableOpacity
-        style={[styles.fab, { bottom: tabBarClearance }]}
-        onPress={() => setSuggestModalVisible(true)}
-        activeOpacity={0.85}
-      >
-        <Plus size={24} color="#FFFFFF" />
-      </TouchableOpacity>
-
-      <SuggestMechanicModal
-        visible={suggestModalVisible}
-        onClose={() => setSuggestModalVisible(false)}
-        onSubmit={handleSuggestSubmit}
-      />
     </SafeAreaView>
   );
 }
@@ -192,20 +161,5 @@ const styles = StyleSheet.create({
     marginTop: 48,
     color: '#9CA3AF',
     fontSize: 14,
-  },
-  fab: {
-    position: 'absolute',
-    right: 16,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#10B981',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 6,
   },
 });

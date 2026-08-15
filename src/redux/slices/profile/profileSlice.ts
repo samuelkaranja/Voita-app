@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { BASE_URL } from '../../../api/config';
 
-// ── Debug helpers ─────────────────────────────────────────────────────────────
+// Debug helpers
 const debugRequest = (name: string, config: any) => {
   if (__DEV__) {
     console.log(`\n🔵 [${name}] REQUEST:`, JSON.stringify(config, null, 2));
@@ -25,7 +25,7 @@ const debugError = (name: string, err: any) => {
   }
 };
 
-// ── Safe error extractor ──────────────────────────────────────────────────────
+// Safe error extractor
 const extractError = (err: any): string => {
   const detail = err.response?.data?.detail;
   if (typeof detail === 'string') return detail;
@@ -33,7 +33,15 @@ const extractError = (err: any): string => {
   return err.message || 'Request failed';
 };
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// Types
+export interface VerificationStatus {
+  email_verified: boolean;
+  phone_verified: boolean;
+  is_verified: boolean;
+  email: string;
+  phone: string;
+}
+
 export interface EmergencyContact {
   id: string;
   name: string;
@@ -64,6 +72,7 @@ export interface Profile {
   first_name: string;
   last_name: string;
   email: string;
+  email_verified?: boolean; // NEW
   phone: string;
   gender?: string;
   profile_image_url?: string;
@@ -76,12 +85,14 @@ interface ProfileState {
   emergencyContacts: EmergencyContact[];
   vehicles: Vehicle[];
   primaryVehicleId: string | null;
+  verificationStatus: VerificationStatus | null;
   loading: {
     profile: boolean;
     updateProfile: boolean;
     avatar: boolean;
     contacts: boolean;
     vehicles: boolean;
+    verificationStatus: boolean;
   };
   error: string | null;
 }
@@ -91,22 +102,24 @@ const initialState: ProfileState = {
   emergencyContacts: [],
   vehicles: [],
   primaryVehicleId: null,
+  verificationStatus: null,
   loading: {
     profile: false,
     updateProfile: false,
     avatar: false,
     contacts: false,
     vehicles: false,
+    verificationStatus: false,
   },
   error: null,
 };
 
-// ── Auth header helper ────────────────────────────────────────────────────────
+// Auth header helper
 const authHeader = (token: string) => ({
   headers: { Authorization: `Bearer ${token}` },
 });
 
-// ── PROFILE ───────────────────────────────────────────────────────────────────
+// PROFILE
 export const fetchProfile = createAsyncThunk(
   'profile/fetch',
   async (_, { getState, rejectWithValue }) => {
@@ -118,6 +131,23 @@ export const fetchProfile = createAsyncThunk(
         authHeader(token),
       );
       return res.data;
+    } catch (err: any) {
+      return rejectWithValue(extractError(err));
+    }
+  },
+);
+
+export const fetchVerificationStatus = createAsyncThunk(
+  'profile/fetchVerificationStatus',
+  async (_, { getState, rejectWithValue }) => {
+    const token = (getState() as any).auth.token;
+    if (!token) return rejectWithValue('Not authenticated');
+    try {
+      const res = await axios.get(
+        `${BASE_URL}/api/v1/profile/verification-status`,
+        authHeader(token),
+      );
+      return res.data as VerificationStatus;
     } catch (err: any) {
       return rejectWithValue(extractError(err));
     }
@@ -202,7 +232,7 @@ export const deleteAvatar = createAsyncThunk(
   },
 );
 
-// ── EMERGENCY CONTACTS ────────────────────────────────────────────────────────
+// EMERGENCY CONTACTS
 export const fetchEmergencyContacts = createAsyncThunk(
   'profile/fetchContacts',
   async (_, { getState, rejectWithValue }) => {
@@ -317,7 +347,7 @@ export const deleteEmergencyContact = createAsyncThunk(
   },
 );
 
-// ── VEHICLES ──────────────────────────────────────────────────────────────────
+// VEHICLES
 export const fetchVehicles = createAsyncThunk(
   'profile/fetchVehicles',
   async (_, { getState, rejectWithValue }) => {
@@ -554,7 +584,7 @@ export const updateMaintenanceDates = createAsyncThunk(
   },
 );
 
-// ── SLICE ─────────────────────────────────────────────────────────────────────
+// SLICE
 const profileSlice = createSlice({
   name: 'profile',
   initialState,
@@ -567,6 +597,7 @@ const profileSlice = createSlice({
       state.emergencyContacts = [];
       state.vehicles = [];
       state.primaryVehicleId = null;
+      state.verificationStatus = null;
       state.error = null;
     },
   },
@@ -584,6 +615,21 @@ const profileSlice = createSlice({
       .addCase(fetchProfile.rejected, (state, action) => {
         state.loading.profile = false;
         state.error = action.payload as string;
+      })
+
+      // Verification status
+      .addCase(fetchVerificationStatus.pending, state => {
+        state.loading.verificationStatus = true;
+      })
+      .addCase(fetchVerificationStatus.fulfilled, (state, action) => {
+        state.loading.verificationStatus = false;
+        state.verificationStatus = action.payload;
+      })
+      .addCase(fetchVerificationStatus.rejected, (state, action) => {
+        state.loading.verificationStatus = false;
+        if (action.payload !== 'Not authenticated') {
+          state.error = action.payload as string;
+        }
       })
 
       // Update profile

@@ -1,72 +1,47 @@
 import React, { useEffect } from 'react';
-import {
-  View,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Dimensions,
-} from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import {
-  Home,
-  Wrench,
-  ShoppingCart,
-  Users,
-  ShieldCheck,
-  FileText,
-  User,
-} from 'lucide-react-native';
+import { Home, Wrench, Users, User } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import { generatePath } from '../utils/tabBarPath';
-
-const { width } = Dimensions.get('window');
 
 const icons: any = {
   Home: Home,
   Services: Wrench,
-  Marketplace: ShoppingCart,
   Community: Users,
-  Insurance: ShieldCheck,
-  Claims: FileText,
   Profile: User,
 };
 
 // Tab bar layout constants — kept in one place so anything
 // positioning UI above the tab bar can stay in sync automatically.
-const TAB_ICON_ROW_HEIGHT = 65;
-const ACTIVE_CIRCLE_RISE = 35; // activeCircle's `top: -35`
-const ACTIVE_CIRCLE_RADIUS = 25; // half of activeCircle's 50px size
-const CLEARANCE_MARGIN = 15; // breathing room above the circle
+const BAR_HEIGHT = 64;
+const BAR_BOTTOM_MARGIN = 16; // gap between the pill and the screen edge
+const BAR_SIDE_MARGIN = 16;
+const CLEARANCE_BUFFER = 12;
 
 export function useTabBarClearance() {
   const insets = useSafeAreaInsets();
-  return (
-    TAB_ICON_ROW_HEIGHT +
-    insets.bottom +
-    15 +
-    ACTIVE_CIRCLE_RISE +
-    ACTIVE_CIRCLE_RADIUS +
-    CLEARANCE_MARGIN
-  );
+  return BAR_HEIGHT + BAR_BOTTOM_MARGIN + insets.bottom + CLEARANCE_BUFFER;
 }
 
 // 1. Extracted Tab Item to legally use Hooks safely per-tab
 function TabItem({ route, isFocused, onPress }: any) {
   const Icon = icons[route.name];
-  const scale = useSharedValue(isFocused ? 1 : 0);
+  const progress = useSharedValue(isFocused ? 1 : 0);
 
   useEffect(() => {
-    scale.value = withSpring(isFocused ? 1 : 0);
+    progress.value = withSpring(isFocused ? 1 : 0, {
+      damping: 15,
+      stiffness: 160,
+    });
   }, [isFocused]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+  const pillStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ scale: 0.6 + progress.value * 0.4 }],
   }));
 
   return (
@@ -76,22 +51,14 @@ function TabItem({ route, isFocused, onPress }: any) {
       activeOpacity={0.8}
       onPress={onPress}
     >
-      <View style={styles.iconWrapper}>
-        {/* We keep a structural container so the Text label stays in place */}
-        <View style={styles.iconContainer}>
-          {isFocused ? (
-            <Animated.View style={[styles.activeCircle, animatedStyle]}>
-              <Icon size={22} color="#fff" />
-            </Animated.View>
-          ) : (
-            <Icon size={22} color="#999" />
-          )}
-        </View>
-
-        <Text style={[styles.label, { color: isFocused ? '#0d2b1f' : '#999' }]}>
-          {route.name}
-        </Text>
+      <View style={styles.iconContainer}>
+        <Animated.View style={[styles.activePill, pillStyle]} />
+        <Icon size={20} color={isFocused ? '#0d2b1f' : '#9AA5A0'} />
       </View>
+
+      <Text style={[styles.label, isFocused && styles.labelActive]}>
+        {route.name}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -99,40 +66,34 @@ function TabItem({ route, isFocused, onPress }: any) {
 export default function CustomTabBar({ state, navigation, descriptors }: any) {
   const focusedOptions = descriptors[state.routes[state.index].key].options;
   const insets = useSafeAreaInsets();
-  const tabWidth = width / state.routes.length;
-  const totalHeight = TAB_ICON_ROW_HEIGHT + insets.bottom + 15; // icon row + safe area + original design margin, counted once
 
   if (focusedOptions.tabBarStyle?.display === 'none') {
     return null;
   }
 
   return (
-    <View style={[styles.wrapper, { height: totalHeight }]}>
-      <Svg width={width} height={totalHeight} style={styles.svg}>
-        <Path
-          d={generatePath(width, totalHeight, tabWidth, state.index)}
-          fill="#F5F5F5"
-        />
-      </Svg>
-
-      <View
-        style={[
-          styles.tabs,
-          { height: totalHeight, paddingBottom: insets.bottom + 15 },
-        ]}
-      >
-        {state.routes.map((route: any, index: number) => {
-          const isFocused = state.index === index;
-          return (
-            <TabItem
-              key={route.key}
-              route={route}
-              isFocused={isFocused}
-              onPress={() => navigation.navigate(route.name)}
-            />
-          );
-        })}
-      </View>
+    <View
+      style={[
+        styles.wrapper,
+        {
+          bottom: insets.bottom + BAR_BOTTOM_MARGIN,
+          left: BAR_SIDE_MARGIN,
+          right: BAR_SIDE_MARGIN,
+          height: BAR_HEIGHT,
+        },
+      ]}
+    >
+      {state.routes.map((route: any, index: number) => {
+        const isFocused = state.index === index;
+        return (
+          <TabItem
+            key={route.key}
+            route={route}
+            isFocused={isFocused}
+            onPress={() => navigation.navigate(route.name)}
+          />
+        );
+      })}
     </View>
   );
 }
@@ -140,54 +101,43 @@ export default function CustomTabBar({ state, navigation, descriptors }: any) {
 const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
-    bottom: 0,
-    left: 0, // Ensures width spans the whole screen
-    right: 0, // Ensures width spans the whole screen
-    width: width, // Explicit fallback width
-    backgroundColor: 'transparent',
-  },
-  svg: {
-    position: 'absolute',
-    bottom: 0,
-  },
-  tabs: {
     flexDirection: 'row',
-    height: 65,
-    width: width, // Match screen width perfectly
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 32,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
   },
   tab: {
     flex: 1,
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  iconWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    //height: '100%',
   },
   iconContainer: {
-    height: 20, // Fixed height space so things don't jump when switching
+    width: 40,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  activePill: {
+    position: 'absolute',
+    width: 40,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#DCEAE1',
   },
   label: {
     fontSize: 10,
     marginTop: 4,
+    color: '#9AA5A0',
     textAlign: 'center',
   },
-  activeCircle: {
-    position: 'absolute',
-    top: -ACTIVE_CIRCLE_RISE,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#0d2b1f',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  labelActive: {
+    color: '#0d2b1f',
+    fontWeight: '600',
   },
 });

@@ -360,6 +360,13 @@ export default function HomeScreen() {
         } nearby`,
       });
 
+    if (safety.washroomStops?.length > 0)
+      items.push({
+        icon: '🚻',
+        label: 'Washroom stops along the route',
+        sub: safety.washroomStops.join(' · '),
+      });
+
     if (safety.openNowCount > 0)
       items.push({
         icon: '🏪',

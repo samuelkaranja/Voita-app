@@ -149,6 +149,21 @@ const communitySlice = createSlice({
     clearCommunityError(state) {
       state.error = null;
     },
+    markRoomJoined(state, action: PayloadAction<string>) {
+      const roomId = action.payload;
+
+      // Drop it from pending requests
+      state.pendingRequests = state.pendingRequests.filter(
+        r => r.roomId !== roomId,
+      );
+
+      // Reflect the new status in browseRooms if it's still loaded there
+      state.browseRooms = state.browseRooms.map(room =>
+        room.id === roomId
+          ? { ...room, status: 'joined', requestedAt: undefined }
+          : room,
+      );
+    },
   },
   extraReducers: builder => {
     builder
@@ -228,5 +243,5 @@ const communitySlice = createSlice({
   },
 });
 
-export const { clearCommunityError } = communitySlice.actions;
+export const { clearCommunityError, markRoomJoined } = communitySlice.actions;
 export default communitySlice.reducer;

@@ -14,6 +14,8 @@ interface User {
   email: string;
   phone: string;
   profileImageUrl: string | null;
+  emailVerified: boolean;
+  phoneVerified: boolean;
 }
 
 interface AuthState {
@@ -22,6 +24,7 @@ interface AuthState {
   tokenExpiresAt: number | null;
   error: string | null;
   phone: string | null;
+  verificationError: string | null;
   loading: {
     login: boolean;
     register: boolean;
@@ -29,6 +32,11 @@ interface AuthState {
     sendOtp: boolean;
     init: boolean;
     refresh: boolean;
+    sendVerificationEmail: boolean; // NEW
+    //verifyEmail: boolean; // NEW
+    requestPasswordReset: boolean; // NEW — POST /auth/forgot-password
+    verifyResetOtp: boolean; // NEW — POST /auth/verify-reset-otp
+    resetPassword: boolean; // NEW — POST /auth/reset-password (3-step flow)
   };
 }
 
@@ -38,6 +46,7 @@ const initialState: AuthState = {
   tokenExpiresAt: null,
   error: null,
   phone: null,
+  verificationError: null,
   loading: {
     login: false,
     register: false,
@@ -45,6 +54,11 @@ const initialState: AuthState = {
     sendOtp: false,
     init: true,
     refresh: false,
+    sendVerificationEmail: false,
+    //verifyEmail: false,
+    requestPasswordReset: false,
+    verifyResetOtp: false,
+    resetPassword: false,
   },
 };
 
@@ -55,6 +69,8 @@ const mapDriverToUser = (driver: any): User => ({
   email: driver?.email ?? '',
   phone: driver?.phone ?? '',
   profileImageUrl: driver?.profile_image_url ?? null,
+  emailVerified: driver?.email_verified ?? false, // NEW
+  phoneVerified: driver?.phone_verified ?? false,
 });
 
 // LOAD STORED AUTH
@@ -143,7 +159,7 @@ export const sendOtp = createAsyncThunk(
   },
 );
 
-// VERIFY OTP
+// VERIFY OTP — fixed to read `detail`, matching confirmed 400 body shape
 export const verifyOtp = createAsyncThunk(
   'auth/verifyOtp',
   async (
@@ -159,7 +175,9 @@ export const verifyOtp = createAsyncThunk(
 
       return res.data;
     } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || 'OTP failed');
+      return rejectWithValue(
+        err.response?.data?.detail || 'OTP failed', // was: .message — confirmed wrong via curl
+      );
     }
   },
 );
@@ -177,6 +195,127 @@ export const loginUser = createAsyncThunk(
       return res.data;
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.detail || 'Login failed');
+    }
+  },
+);
+
+// SEND VERIFICATION EMAIL — now returns HTTP 500 + {detail} on failure
+export const sendVerificationEmail = createAsyncThunk(
+  'auth/sendVerificationEmail',
+  async (_, { getState, rejectWithValue }) => {
+    const token = (getState() as any).auth.token;
+    if (!token) return rejectWithValue('Not authenticated');
+    try {
+      const res = await axios.post(
+        `${BASE_URL}/api/v1/auth/send-verification-email`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      return res.data;
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.detail || 'Failed to send verification email',
+      );
+    }
+  },
+);
+
+// VERIFY EMAIL — still returns HTTP 200 even on failure, so check success manually
+// export const verifyEmail = createAsyncThunk(
+//   'auth/verifyEmail',
+//   async (token: string, { rejectWithValue }) => {
+//     try {
+//       const res = await axios.get(`${BASE_URL}/api/v1/auth/verify-email`, {
+//         params: { token },
+//       });
+//       if (!res.data.success) {
+//         return rejectWithValue(res.data.message || 'Verification failed');
+//       }
+//       return res.data; // { success: true, message, email_verified: true }
+//     } catch (err: any) {
+//       return rejectWithValue(
+//         err.response?.data?.detail || 'Verification failed',
+//       );
+//     }
+//   },
+// );
+
+// ─────────────────────────────────────────────────────────────
+// PASSWORD RESET (3-step flow) — unauthenticated, no token header.
+// reset_token is intentionally NOT persisted in Redux state or
+// AsyncStorage per backend security notes; each thunk's resolved
+// value is read via `.unwrap()` in the calling screen and passed
+// forward through navigation params only.
+//
+// NOTE: `detail` field assumption below is from the backend spec
+// doc, not yet curl-confirmed for these 3 endpoints specifically —
+// verify actual 400/404 error body shape before relying on it,
+// same way `verifyOtp` above was corrected after curl testing.
+// ─────────────────────────────────────────────────────────────
+
+// STEP 1: REQUEST PASSWORD RESET OTP
+export const requestPasswordReset = createAsyncThunk(
+  'auth/requestPasswordReset',
+  async (phone: string, { rejectWithValue }) => {
+    try {
+      const res = await axios.post(`${BASE_URL}/api/v1/auth/forgot-password`, {
+        phone,
+      });
+
+      return res.data; // { success, message, phone, otp_id, expires_in_minutes }
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.detail || 'Failed to send OTP',
+      );
+    }
+  },
+);
+
+// STEP 2: VERIFY RESET OTP — returns reset_token, consumes the OTP server-side
+export const verifyResetOtp = createAsyncThunk(
+  'auth/verifyResetOtp',
+  async (
+    { phone, otpCode }: { phone: string; otpCode: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const res = await axios.post(`${BASE_URL}/api/v1/auth/verify-reset-otp`, {
+        phone,
+        otp_code: otpCode,
+      });
+
+      return res.data; // { success, message, reset_token, expires_in_minutes }
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.detail || 'Invalid or expired OTP',
+      );
+    }
+  },
+);
+
+// STEP 3: RESET PASSWORD USING reset_token
+export const resetPassword = createAsyncThunk(
+  'auth/resetPassword',
+  async (
+    {
+      phone,
+      resetToken,
+      newPassword,
+    }: { phone: string; resetToken: string; newPassword: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const res = await axios.post(`${BASE_URL}/api/v1/auth/reset-password`, {
+        phone,
+        reset_token: resetToken,
+        new_password: newPassword,
+      });
+
+      return res.data; // { success, message, phone }
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.detail || 'Failed to reset password',
+      );
     }
   },
 );
@@ -272,6 +411,9 @@ const authSlice = createSlice({
       })
       .addCase(verifyOtp.fulfilled, state => {
         state.loading.verifyOtp = false;
+        if (state.user) {
+          state.user.phoneVerified = true;
+        }
       })
       .addCase(verifyOtp.rejected, state => {
         state.loading.verifyOtp = false;
@@ -306,7 +448,77 @@ const authSlice = createSlice({
       .addCase(loginUser.rejected, (state, action) => {
         state.loading.login = false;
         state.error = action.payload as string;
+      })
+
+      // SEND VERIFICATION EMAIL
+      .addCase(sendVerificationEmail.pending, state => {
+        state.loading.sendVerificationEmail = true;
+      })
+      .addCase(sendVerificationEmail.fulfilled, state => {
+        state.loading.sendVerificationEmail = false;
+      })
+      .addCase(sendVerificationEmail.rejected, state => {
+        state.loading.sendVerificationEmail = false;
+      })
+
+      // PASSWORD RESET — STEP 1: REQUEST OTP
+      .addCase(requestPasswordReset.pending, state => {
+        state.loading.requestPasswordReset = true;
+      })
+      .addCase(requestPasswordReset.fulfilled, state => {
+        state.loading.requestPasswordReset = false;
+      })
+      .addCase(requestPasswordReset.rejected, state => {
+        state.loading.requestPasswordReset = false;
+      })
+
+      // PASSWORD RESET — STEP 2: VERIFY OTP
+      .addCase(verifyResetOtp.pending, state => {
+        state.loading.verifyResetOtp = true;
+      })
+      .addCase(verifyResetOtp.fulfilled, state => {
+        state.loading.verifyResetOtp = false;
+        // reset_token intentionally not stored here — read via .unwrap()
+        // in the screen and pass forward through navigation params.
+      })
+      .addCase(verifyResetOtp.rejected, state => {
+        state.loading.verifyResetOtp = false;
+      })
+
+      // PASSWORD RESET — STEP 3: SET NEW PASSWORD
+      .addCase(resetPassword.pending, state => {
+        state.loading.resetPassword = true;
+      })
+      .addCase(resetPassword.fulfilled, state => {
+        state.loading.resetPassword = false;
+      })
+      .addCase(resetPassword.rejected, state => {
+        state.loading.resetPassword = false;
       });
+
+    // VERIFY EMAIL
+    // .addCase(verifyEmail.pending, state => {
+    //   state.loading.verifyEmail = true;
+    //   state.verificationError = null;
+    // })
+    // .addCase(verifyEmail.fulfilled, state => {
+    //   state.loading.verifyEmail = false;
+    //   if (state.user) {
+    //     state.user.emailVerified = true;
+    //     AsyncStorage.setItem(
+    //       'authData',
+    //       JSON.stringify({
+    //         token: state.token,
+    //         user: state.user,
+    //         tokenExpiresAt: state.tokenExpiresAt,
+    //       }),
+    //     );
+    //   }
+    // })
+    // .addCase(verifyEmail.rejected, (state, action) => {
+    //   state.loading.verifyEmail = false;
+    //   state.verificationError = action.payload as string;
+    // });
   },
 });
 
