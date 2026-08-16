@@ -429,6 +429,7 @@ export default function HomeScreen() {
               selected={selectedTag}
               setSelected={setSelectedTag}
               onSelect={handleTagSelect}
+              isDarkMap={false}
             />
           </View>
 
@@ -557,7 +558,7 @@ export default function HomeScreen() {
       )}
 
       {/* Destination */}
-      <DestinationCard style={{ bottom: tabBarClearance }} />
+      <DestinationCard bottomOffset={tabBarClearance} />
 
       {/* Safety Bottom Sheet */}
       <BottomSheet

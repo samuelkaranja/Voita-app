@@ -9,6 +9,7 @@ import {
   GalleryHorizontalEnd,
   Bus,
 } from 'lucide-react-native';
+import { formatDistance } from '../../../../utils/formatDistance';
 
 export type TowingAvailability = 'available' | 'busy';
 
@@ -17,7 +18,7 @@ export interface TowingItem {
   name: string;
   rating: number;
   reviewCount: number;
-  distanceKm: number;
+  distanceKm: number | null;
   etaMin: number;
   etaMax: number;
   tags: string[];
@@ -74,9 +75,15 @@ export const TowingCard: React.FC<TowingCardProps> = ({
                 : item.reviewCount}
               )
             </Text>
-            <Text style={styles.dot}>•</Text>
-            <MapPin size={12} color="#6B7280" strokeWidth={2} />
-            <Text style={styles.metaText}>{item.distanceKm} km</Text>
+            {item.distanceKm != null && (
+              <>
+                <Text style={styles.dot}>•</Text>
+                <MapPin size={12} color="#6B7280" strokeWidth={2} />
+                <Text style={styles.metaText}>
+                  {formatDistance(item.distanceKm)}
+                </Text>
+              </>
+            )}
           </View>
         </View>
 

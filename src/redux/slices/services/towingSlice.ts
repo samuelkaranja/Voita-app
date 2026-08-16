@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import {
   apiFetch,
-  apiFetchAuth,
+  authorizedFetch,
   buildUrl,
   extractError,
 } from '../../../services/api';
@@ -32,7 +32,7 @@ export interface TowingReview {
 export type TowingAvailability = 'available' | 'busy';
 export type TowingVehicleType = 'flatbed' | 'heavy' | 'roadside';
 
-// Shape returned by GET /towing-providers/ (list)
+// Shape returned by GET /api/v1/towing-providers/ (list)
 export interface TowingListItem {
   id: string;
   name: string;
@@ -47,7 +47,7 @@ export interface TowingListItem {
   is_partner: boolean;
 }
 
-// Shape returned by GET /towing-providers/{id} (detail)
+// Shape returned by GET /api/v1/towing-providers/{id} (detail)
 export interface TowingDetail {
   id: string;
   name: string;
@@ -100,7 +100,7 @@ export const fetchTowingProviders = createAsyncThunk<
   TowingFilters | undefined
 >('towing/fetchList', async (filters = {}, { rejectWithValue }) => {
   try {
-    const url = buildUrl('/towing-providers/', {
+    const url = buildUrl('/api/v1/towing-providers/', {
       type: filters.type && filters.type !== 'all' ? filters.type : undefined,
       search: filters.search,
       lat: filters.lat,
@@ -116,7 +116,7 @@ export const fetchTowingDetail = createAsyncThunk<TowingDetail, string>(
   'towing/fetchDetail',
   async (providerId, { rejectWithValue }) => {
     try {
-      const url = buildUrl(`/towing-providers/${providerId}`);
+      const url = buildUrl(`/api/v1/towing-providers/${providerId}`);
       return await apiFetch<TowingDetail>(url);
     } catch (err) {
       return rejectWithValue(extractError(err));
@@ -126,11 +126,10 @@ export const fetchTowingDetail = createAsyncThunk<TowingDetail, string>(
 
 export const suggestTowing = createAsyncThunk<void, TowingSuggestionPayload>(
   'towing/suggest',
-  async (payload, { getState, rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      const token = (getState() as any).auth.token;
-      const url = buildUrl('/towing-providers/suggestions/');
-      await apiFetchAuth<void>(url, token, {
+      const url = buildUrl('/api/v1/towing-providers/suggestions/');
+      await authorizedFetch<void>(url, {
         method: 'POST',
         body: JSON.stringify(payload),
       });

@@ -1,10 +1,7 @@
-// src/store/slices/chat/chatSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { RootState } from '../../store';
+import { api } from '../../../api/client';
+import { extractError } from '../../../api/errors';
 import { ChatMessage, ChatRoomDetail } from '../../../types/chat';
-
-const BASE_URL = 'https://voita-backend.fly.dev/api/v1';
 
 const debugRequest = (label: string, data?: unknown) => {
   if (__DEV__) console.log(`[chat] → ${label}`, data ?? '');
@@ -15,8 +12,6 @@ const debugResponse = (label: string, data?: unknown) => {
 const debugError = (label: string, error: unknown) => {
   if (__DEV__) console.log(`[chat] ✕ ${label}`, error);
 };
-const extractError = (error: any): string =>
-  error?.response?.data?.detail || error?.message || 'Something went wrong';
 
 interface ChatState {
   roomsById: Record<string, ChatRoomDetail>;
@@ -32,18 +27,14 @@ const initialState: ChatState = {
 
 export const fetchRoomMessages = createAsyncThunk(
   'chat/fetchRoomMessages',
-  async (roomId: string, { getState, rejectWithValue }) => {
-    const token = (getState() as RootState).auth.token;
+  async (roomId: string, { rejectWithValue }) => {
     try {
-      debugRequest('GET /community/rooms/{id}/messages/', { roomId });
-      const res = await axios.get(
-        `${BASE_URL}/community/rooms/${roomId}/messages/`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      debugResponse('GET /community/rooms/{id}/messages/', res.data);
+      debugRequest('GET /api/v1/community/rooms/{id}/messages/', { roomId });
+      const res = await api.get(`/api/v1/community/rooms/${roomId}/messages/`);
+      debugResponse('GET /api/v1/community/rooms/{id}/messages/', res.data);
       return res.data as ChatRoomDetail;
     } catch (error) {
-      debugError('GET /community/rooms/{id}/messages/', error);
+      debugError('GET /api/v1/community/rooms/{id}/messages/', error);
       return rejectWithValue(extractError(error));
     }
   },
@@ -53,20 +44,21 @@ export const sendTextMessage = createAsyncThunk(
   'chat/sendTextMessage',
   async (
     { roomId, text }: { roomId: string; text: string },
-    { getState, rejectWithValue },
+    { rejectWithValue },
   ) => {
-    const token = (getState() as RootState).auth.token;
     try {
-      debugRequest('POST /community/rooms/{id}/messages/', { roomId, text });
-      const res = await axios.post(
-        `${BASE_URL}/community/rooms/${roomId}/messages/`,
+      debugRequest('POST /api/v1/community/rooms/{id}/messages/', {
+        roomId,
+        text,
+      });
+      const res = await api.post(
+        `/api/v1/community/rooms/${roomId}/messages/`,
         { text },
-        { headers: { Authorization: `Bearer ${token}` } },
       );
-      debugResponse('POST /community/rooms/{id}/messages/', res.data);
+      debugResponse('POST /api/v1/community/rooms/{id}/messages/', res.data);
       return { roomId, message: res.data as ChatMessage };
     } catch (error) {
-      debugError('POST /community/rooms/{id}/messages/', error);
+      debugError('POST /api/v1/community/rooms/{id}/messages/', error);
       return rejectWithValue(extractError(error));
     }
   },

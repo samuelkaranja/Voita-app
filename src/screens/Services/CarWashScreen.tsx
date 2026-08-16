@@ -5,15 +5,18 @@ import {
   StyleSheet,
   ActivityIndicator,
   Text,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ServicesStackParamList } from '../../navigation/ServicesStack';
+import { useDeviceLocation } from '../../hooks/useDeviceLocation';
 import {
   fetchCarWashes,
   clearErrors,
 } from '../../redux/slices/services/carWashSlice';
+import { MapPin } from 'lucide-react-native';
 
 import { SearchBar } from './components/SearchBar';
 import { FilterChips, FilterChip } from './components/FilterChips';
@@ -38,26 +41,56 @@ export default function CarWashScreen() {
   const [search, setSearch] = useState('');
   const [activeType, setActiveType] = useState('all');
 
+  const NEARBY_RADIUS_KM = 10;
+
+  const {
+    enabled: filterByLocation,
+    loading: locationLoading,
+    coords,
+    toggle: toggleNearby,
+  } = useDeviceLocation();
+
   useEffect(() => {
-    dispatch(fetchCarWashes({ type: activeType }));
+    dispatch(
+      fetchCarWashes({ type: activeType, lat: coords?.lat, lng: coords?.lng }),
+    );
     return () => {
       dispatch(clearErrors());
     };
-  }, [activeType]);
+  }, [activeType, coords]);
 
   const handleSearchSubmit = useCallback(() => {
-    dispatch(fetchCarWashes({ search, type: activeType }));
-  }, [search, activeType]);
-
-  const filteredList = list.filter(w => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      w.name.toLowerCase().includes(q) ||
-      w.area.toLowerCase().includes(q) ||
-      w.tags.some(t => t.toLowerCase().includes(q))
+    dispatch(
+      fetchCarWashes({
+        search,
+        type: activeType,
+        lat: coords?.lat,
+        lng: coords?.lng,
+      }),
     );
-  });
+  }, [search, activeType, coords]);
+
+  const filteredList = list
+    .filter(w => {
+      if (
+        filterByLocation &&
+        (w.distance_km == null || w.distance_km > NEARBY_RADIUS_KM)
+      ) {
+        return false;
+      }
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return (
+        w.name.toLowerCase().includes(q) ||
+        w.area.toLowerCase().includes(q) ||
+        w.tags.some(t => t.toLowerCase().includes(q))
+      );
+    })
+    .sort((a, b) =>
+      filterByLocation
+        ? (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity)
+        : 0,
+    );
 
   const chipFilters = TYPE_FILTERS.map(f => ({
     ...f,
@@ -74,6 +107,40 @@ export default function CarWashScreen() {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.header}>
+            <View style={styles.toggleRow}>
+              <TouchableOpacity
+                style={[
+                  styles.locationToggle,
+                  filterByLocation && styles.locationToggleActive,
+                ]}
+                onPress={toggleNearby}
+                activeOpacity={0.7}
+                disabled={locationLoading}
+              >
+                {locationLoading ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={filterByLocation ? '#FFFFFF' : '#10B981'}
+                  />
+                ) : (
+                  <>
+                    <MapPin
+                      size={14}
+                      color={filterByLocation ? '#FFFFFF' : '#10B981'}
+                      strokeWidth={2.5}
+                    />
+                    <Text
+                      style={[
+                        styles.locationToggleText,
+                        filterByLocation && styles.locationToggleTextActive,
+                      ]}
+                    >
+                      Nearby
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
             <SearchBar
               value={search}
               onChangeText={setSearch}
@@ -93,7 +160,7 @@ export default function CarWashScreen() {
               id: item.id,
               name: item.name,
               rating: item.rating,
-              distanceKm: item.distance_km ?? 0,
+              distanceKm: item.distance_km,
               area: item.area,
               imageUri: item.image_url,
               waitMins: item.wait_time_mins,
@@ -129,6 +196,33 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F3F4F6', paddingBottom: 70 },
   list: { paddingHorizontal: 16, paddingBottom: 40 },
   header: { paddingTop: 8, paddingBottom: 8, gap: 12 },
+  toggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  locationToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#10B981',
+    backgroundColor: '#FFFFFF',
+  },
+  locationToggleActive: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  locationToggleText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#10B981',
+  },
+  locationToggleTextActive: {
+    color: '#FFFFFF',
+  },
   loader: { marginTop: 48 },
   errorText: {
     textAlign: 'center',

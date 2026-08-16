@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { BASE_URL } from '../../../api/config';
+import { api } from '../../../api/client';
+import { extractError, isAuthError } from '../../../api/errors';
+//import axios from 'axios';
+//import { BASE_URL } from '../../../api/config';
 
 // Debug helpers
 const debugRequest = (name: string, config: any) => {
@@ -20,18 +22,17 @@ const debugError = (name: string, err: any) => {
       detail: err.response?.data,
       message: err.message,
       url: err.config?.url,
-      headers: err.config?.headers,
     });
   }
 };
 
 // Safe error extractor
-const extractError = (err: any): string => {
-  const detail = err.response?.data?.detail;
-  if (typeof detail === 'string') return detail;
-  if (Array.isArray(detail)) return detail.map((e: any) => e.msg).join(', ');
-  return err.message || 'Request failed';
-};
+// const extractError = (err: any): string => {
+//   const detail = err.response?.data?.detail;
+//   if (typeof detail === 'string') return detail;
+//   if (Array.isArray(detail)) return detail.map((e: any) => e.msg).join(', ');
+//   return err.message || 'Request failed';
+// };
 
 // Types
 export interface VerificationStatus {
@@ -115,21 +116,17 @@ const initialState: ProfileState = {
 };
 
 // Auth header helper
-const authHeader = (token: string) => ({
-  headers: { Authorization: `Bearer ${token}` },
-});
+// const authHeader = (token: string) => ({
+//   headers: { Authorization: `Bearer ${token}` },
+// });
 
-// PROFILE
 export const fetchProfile = createAsyncThunk(
   'profile/fetch',
   async (_, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
-      const res = await axios.get(
-        `${BASE_URL}/api/v1/profile`,
-        authHeader(token),
-      );
+      const res = await api.get('/api/v1/profile');
       return res.data;
     } catch (err: any) {
       return rejectWithValue(extractError(err));
@@ -140,13 +137,10 @@ export const fetchProfile = createAsyncThunk(
 export const fetchVerificationStatus = createAsyncThunk(
   'profile/fetchVerificationStatus',
   async (_, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
-      const res = await axios.get(
-        `${BASE_URL}/api/v1/profile/verification-status`,
-        authHeader(token),
-      );
+      const res = await api.get('/api/v1/profile/verification-status');
       return res.data as VerificationStatus;
     } catch (err: any) {
       return rejectWithValue(extractError(err));
@@ -157,24 +151,16 @@ export const fetchVerificationStatus = createAsyncThunk(
 export const updateProfile = createAsyncThunk(
   'profile/update',
   async (data: any, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
       const form = new FormData();
       Object.entries(data).forEach(([k, v]) => {
         if (v) form.append(k, v as string);
       });
-      debugRequest('updateProfile', {
-        url: `${BASE_URL}/api/v1/profile`,
-        token: token ? `${token.substring(0, 20)}...` : 'NULL ⚠️',
-        fields: data,
-      });
-      const res = await axios.put(`${BASE_URL}/api/v1/profile`, form, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      debugRequest('updateProfile', { url: '/api/v1/profile', fields: data });
+      // No manual headers — api instance attaches the token, FormData sets its own boundary
+      const res = await api.put('/api/v1/profile', form);
       debugResponse('updateProfile', res.data);
       return res.data;
     } catch (err: any) {
@@ -187,8 +173,8 @@ export const updateProfile = createAsyncThunk(
 export const uploadAvatar = createAsyncThunk(
   'profile/uploadAvatar',
   async (imageUri: string, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
       const form = new FormData();
       form.append('avatar', {
@@ -196,17 +182,8 @@ export const uploadAvatar = createAsyncThunk(
         type: 'image/jpeg',
         name: 'avatar.jpg',
       } as any);
-      debugRequest('uploadAvatar', {
-        url: `${BASE_URL}/api/v1/profile/avatar`,
-        token: token ? `${token.substring(0, 20)}...` : 'NULL ⚠️',
-        imageUri,
-      });
-      const res = await axios.post(`${BASE_URL}/api/v1/profile/avatar`, form, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      debugRequest('uploadAvatar', { url: '/api/v1/profile/avatar', imageUri });
+      const res = await api.post('/api/v1/profile/avatar', form);
       debugResponse('uploadAvatar', res.data);
       return res.data;
     } catch (err: any) {
@@ -219,13 +196,10 @@ export const uploadAvatar = createAsyncThunk(
 export const deleteAvatar = createAsyncThunk(
   'profile/deleteAvatar',
   async (_, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
-      await axios.delete(
-        `${BASE_URL}/api/v1/profile/avatar`,
-        authHeader(token),
-      );
+      await api.delete('/api/v1/profile/avatar');
     } catch (err: any) {
       return rejectWithValue(extractError(err));
     }
@@ -236,17 +210,10 @@ export const deleteAvatar = createAsyncThunk(
 export const fetchEmergencyContacts = createAsyncThunk(
   'profile/fetchContacts',
   async (_, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
-      debugRequest('fetchEmergencyContacts', {
-        url: `${BASE_URL}/api/v1/profile/emergency-contacts`,
-        token: token ? `${token.substring(0, 20)}...` : 'NULL ⚠️',
-      });
-      const res = await axios.get(
-        `${BASE_URL}/api/v1/profile/emergency-contacts`,
-        authHeader(token),
-      );
+      const res = await api.get('/api/v1/profile/emergency-contacts');
       debugResponse('fetchEmergencyContacts', res.data);
       return res.data.contacts as EmergencyContact[];
     } catch (err: any) {
@@ -262,36 +229,15 @@ export const addEmergencyContact = createAsyncThunk(
     data: { name: string; relationship_type: string; phone: string },
     { getState, rejectWithValue },
   ) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
-      // Serialize manually to guarantee exact JSON string
-      const body = JSON.stringify(data);
-      if (__DEV__) {
-        console.log('Raw body being sent:', body);
-        console.log('Token present:', !!token);
-      }
-
-      const res = await axios.post(
-        `${BASE_URL}/api/v1/profile/emergency-contacts`,
-        body, // ← send pre-serialized string
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-      if (__DEV__) {
-        console.log('Contact response:', JSON.stringify(res.data));
-      }
+      // Plain object is fine — axios sets application/json automatically
+      const res = await api.post('/api/v1/profile/emergency-contacts', data);
       return res.data.contacts as EmergencyContact[];
     } catch (err: any) {
       if (__DEV__) {
-        console.log(
-          'Contact error full response:',
-          JSON.stringify(err.response?.data),
-        );
+        console.log('Contact error:', JSON.stringify(err.response?.data));
       }
       return rejectWithValue(extractError(err));
     }
@@ -310,18 +256,12 @@ export const updateEmergencyContact = createAsyncThunk(
     },
     { getState, rejectWithValue },
   ) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
-      const res = await axios.put(
-        `${BASE_URL}/api/v1/profile/emergency-contacts/${id}`,
+      const res = await api.put(
+        `/api/v1/profile/emergency-contacts/${id}`,
         data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json', // ← explicit JSON
-          },
-        },
       );
       return res.data.contacts as EmergencyContact[];
     } catch (err: any) {
@@ -333,13 +273,10 @@ export const updateEmergencyContact = createAsyncThunk(
 export const deleteEmergencyContact = createAsyncThunk(
   'profile/deleteContact',
   async (id: string, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
-      await axios.delete(
-        `${BASE_URL}/api/v1/profile/emergency-contacts/${id}`,
-        authHeader(token),
-      );
+      await api.delete(`/api/v1/profile/emergency-contacts/${id}`);
       return id;
     } catch (err: any) {
       return rejectWithValue(extractError(err));
@@ -351,14 +288,11 @@ export const deleteEmergencyContact = createAsyncThunk(
 export const fetchVehicles = createAsyncThunk(
   'profile/fetchVehicles',
   async (_, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
-      const res = await axios.get(
-        `${BASE_URL}/api/v1/vehicles/`,
-        authHeader(token),
-      );
-      return res.data; // { vehicles: [...], total: n, primary_vehicle: "uuid" }
+      const res = await api.get('/api/v1/vehicles/');
+      return res.data;
     } catch (err: any) {
       return rejectWithValue(extractError(err));
     }
@@ -387,25 +321,13 @@ export const addVehicle = createAsyncThunk(
     },
     { getState, rejectWithValue },
   ) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
-      debugRequest('addVehicle', {
-        url: `${BASE_URL}/api/v1/vehicles/`,
-        vehicleData,
-      });
-      const res = await axios.post(
-        `${BASE_URL}/api/v1/vehicles/`,
-        vehicleData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
+      debugRequest('addVehicle', { url: '/api/v1/vehicles/', vehicleData });
+      const res = await api.post('/api/v1/vehicles/', vehicleData);
       debugResponse('addVehicle', res.data);
-      return res.data; // single Vehicle object
+      return res.data;
     } catch (err: any) {
       debugError('addVehicle', err);
       return rejectWithValue(extractError(err));
@@ -441,21 +363,13 @@ export const updateVehicle = createAsyncThunk(
     },
     { getState, rejectWithValue },
   ) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
-      debugRequest('updateVehicle', {
-        url: `${BASE_URL}/api/v1/vehicles/${id}`,
-        data,
-      });
-      const res = await axios.put(`${BASE_URL}/api/v1/vehicles/${id}`, data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      debugRequest('updateVehicle', { url: `/api/v1/vehicles/${id}`, data });
+      const res = await api.put(`/api/v1/vehicles/${id}`, data);
       debugResponse('updateVehicle', res.data);
-      return res.data; // single Vehicle object
+      return res.data;
     } catch (err: any) {
       debugError('updateVehicle', err);
       return rejectWithValue(extractError(err));
@@ -466,13 +380,10 @@ export const updateVehicle = createAsyncThunk(
 export const deleteVehicle = createAsyncThunk(
   'profile/deleteVehicle',
   async (id: string, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
-      await axios.delete(
-        `${BASE_URL}/api/v1/vehicles/${id}`,
-        authHeader(token),
-      );
+      await api.delete(`/api/v1/vehicles/${id}`);
       return id;
     } catch (err: any) {
       return rejectWithValue(extractError(err));
@@ -483,19 +394,10 @@ export const deleteVehicle = createAsyncThunk(
 export const setPrimaryVehicle = createAsyncThunk(
   'profile/setPrimaryVehicle',
   async (id: string, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
-      const res = await axios.put(
-        `${BASE_URL}/api/v1/vehicles/${id}/set-primary`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
+      const res = await api.put(`/api/v1/vehicles/${id}/set-primary`, {});
       return { vehicle: res.data, primaryId: id };
     } catch (err: any) {
       return rejectWithValue(extractError(err));
@@ -509,8 +411,8 @@ export const uploadVehiclePhoto = createAsyncThunk(
     { id, imageUri }: { id: string; imageUri: string },
     { getState, rejectWithValue },
   ) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
       const form = new FormData();
       form.append('photo', {
@@ -519,21 +421,12 @@ export const uploadVehiclePhoto = createAsyncThunk(
         name: 'vehicle.jpg',
       } as any);
       debugRequest('uploadVehiclePhoto', {
-        url: `${BASE_URL}/api/v1/vehicles/${id}/photo`,
+        url: `/api/v1/vehicles/${id}/photo`,
         imageUri,
       });
-      const res = await axios.post(
-        `${BASE_URL}/api/v1/vehicles/${id}/photo`,
-        form,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        },
-      );
+      const res = await api.post(`/api/v1/vehicles/${id}/photo`, form);
       debugResponse('uploadVehiclePhoto', res.data);
-      return res.data; // single Vehicle object with updated photo_url
+      return res.data;
     } catch (err: any) {
       debugError('uploadVehiclePhoto', err);
       return rejectWithValue(extractError(err));
@@ -558,25 +451,16 @@ export const updateMaintenanceDates = createAsyncThunk(
     },
     { getState, rejectWithValue },
   ) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
       debugRequest('updateMaintenanceDates', {
-        url: `${BASE_URL}/api/v1/vehicles/${id}/maintenance`,
+        url: `/api/v1/vehicles/${id}/maintenance`,
         data,
       });
-      const res = await axios.put(
-        `${BASE_URL}/api/v1/vehicles/${id}/maintenance`,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
+      const res = await api.put(`/api/v1/vehicles/${id}/maintenance`, data);
       debugResponse('updateMaintenanceDates', res.data);
-      return res.data; // { id, insurance_expiry, last_service_date, next_tire_rotation, license_expiry }
+      return res.data;
     } catch (err: any) {
       debugError('updateMaintenanceDates', err);
       return rejectWithValue(extractError(err));
@@ -614,7 +498,8 @@ const profileSlice = createSlice({
       })
       .addCase(fetchProfile.rejected, (state, action) => {
         state.loading.profile = false;
-        state.error = action.payload as string;
+        if (!isAuthError(action.payload))
+          state.error = action.payload as string;
       })
 
       // Verification status

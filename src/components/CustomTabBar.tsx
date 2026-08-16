@@ -5,19 +5,26 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import { Home, Wrench, Users, User } from 'lucide-react-native';
+import { Home, HandHelping, Users, User } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const icons: any = {
   Home: Home,
-  Services: Wrench,
+  Services: HandHelping,
   Community: Users,
   Profile: User,
 };
 
+const iconSizes: any = {
+  Home: 20,
+  Services: 28,
+  Community: 20,
+  Profile: 20,
+};
+
 // Tab bar layout constants — kept in one place so anything
 // positioning UI above the tab bar can stay in sync automatically.
-const BAR_HEIGHT = 64;
+const BAR_HEIGHT = 67;
 const BAR_BOTTOM_MARGIN = 16; // gap between the pill and the screen edge
 const BAR_SIDE_MARGIN = 16;
 const CLEARANCE_BUFFER = 12;
@@ -30,6 +37,7 @@ export function useTabBarClearance() {
 // 1. Extracted Tab Item to legally use Hooks safely per-tab
 function TabItem({ route, isFocused, onPress }: any) {
   const Icon = icons[route.name];
+  const iconSize = iconSizes[route.name] ?? 20;
   const progress = useSharedValue(isFocused ? 1 : 0);
 
   useEffect(() => {
@@ -53,7 +61,7 @@ function TabItem({ route, isFocused, onPress }: any) {
     >
       <View style={styles.iconContainer}>
         <Animated.View style={[styles.activePill, pillStyle]} />
-        <Icon size={20} color={isFocused ? '#0d2b1f' : '#9AA5A0'} />
+        <Icon size={iconSize} color={isFocused ? '#0d2b1f' : '#9AA5A0'} />
       </View>
 
       <Text style={[styles.label, isFocused && styles.labelActive]}>

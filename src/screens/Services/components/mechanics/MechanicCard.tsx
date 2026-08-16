@@ -8,12 +8,13 @@ import {
   StyleSheet,
 } from 'react-native';
 import { MapPin, Star, ShieldCheck } from 'lucide-react-native';
+import { formatDistance } from '../../../../utils/formatDistance';
 
 export interface MechanicItem {
   id: string;
   name: string;
   rating: number;
-  distanceMiles: number;
+  distanceMiles: number | null;
   imageUri: string;
   verified?: boolean;
   availableToday?: boolean;
@@ -73,10 +74,14 @@ export const MechanicCard: React.FC<MechanicCardProps> = ({
         </View>
 
         {/* Distance */}
-        <View style={styles.distanceRow}>
-          <MapPin size={12} color="#9CA3AF" strokeWidth={2} />
-          <Text style={styles.distance}>{item.distanceMiles} miles away</Text>
-        </View>
+        {item.distanceMiles != null && (
+          <View style={styles.distanceRow}>
+            <MapPin size={12} color="#9CA3AF" strokeWidth={2} />
+            <Text style={styles.distance}>
+              {formatDistance(item.distanceMiles)} away
+            </Text>
+          </View>
+        )}
 
         {/* Specialty Tags */}
         <ScrollView

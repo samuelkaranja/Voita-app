@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface VehicleState {
   numberPlate: string;
@@ -20,13 +20,13 @@ export interface VehicleState {
 }
 
 const initialState: VehicleState = {
-  numberPlate: "",
-  vehicleType: "",
-  year: "",
-  color: "",
-  oilType: "",
-  tirePressure: "",
-  tireConfig: "",
+  numberPlate: '',
+  vehicleType: '',
+  year: '',
+  color: '',
+  oilType: '',
+  tirePressure: '',
+  tireConfig: '',
 
   insuranceRenewal: null,
   drivingLicenseExpiry: null,
@@ -37,7 +37,7 @@ const initialState: VehicleState = {
 };
 
 const vehicleSlice = createSlice({
-  name: "vehicle",
+  name: 'vehicle',
   initialState,
 
   reducers: {
@@ -70,7 +70,6 @@ const vehicleSlice = createSlice({
   },
 });
 
-export const { setVehicle, updateVehicle, clearVehicle } =
-  vehicleSlice.actions;
+export const { setVehicle, updateVehicle, clearVehicle } = vehicleSlice.actions;
 
 export default vehicleSlice.reducer;

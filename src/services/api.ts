@@ -1,128 +1,67 @@
-import { store } from '../redux/store';
-import type { RootState, AppDispatch } from '../redux/store';
-import { refreshAccessToken, logout } from '../redux/slices/auth/authSlice';
+import { api } from '../api/client';
+import { extractError } from '../api/errors';
 
-const BASE_URL = 'https://voita-backend.fly.dev/api/v1';
+// Re-export the central extractError so imported functions in service slices work seamlessly
+export { extractError };
 
+/**
+ * Helper to append query parameters to a path.
+ * Since `api` (axios) handles BASE_URL, this returns a relative path string.
+ */
 export function buildUrl(
   path: string,
   params?: Record<string, string | number | undefined | null>,
 ): string {
-  const url = new URL(`${BASE_URL}${path}`);
+  const searchParams = new URLSearchParams();
+
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
-        url.searchParams.append(key, String(value));
+        searchParams.append(key, String(value));
       }
     });
   }
-  return url.toString();
+
+  const queryString = searchParams.toString();
+  return queryString ? `${path}?${queryString}` : path;
 }
 
+/**
+ * Replaces native `fetch` with Axios `api.request`.
+ * Routes all standard requests through `api/client.ts`.
+ */
 export async function apiFetch<T>(
   url: string,
   options?: RequestInit,
 ): Promise<T> {
-  const response = await fetch(url, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+  const res = await api.request<T>({
+    url,
+    method: options?.method || 'GET',
+    data: options?.body ? JSON.parse(options.body as string) : undefined,
+    headers: options?.headers as any,
   });
-
-  if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ detail: 'Unknown error' }));
-
-    let message: string;
-    if (Array.isArray(error.detail)) {
-      // FastAPI validation errors: [{ loc, msg, type }, ...]
-      message = error.detail
-        .map((d: any) => d?.msg ?? JSON.stringify(d))
-        .join('; ');
-    } else if (typeof error.detail === 'string') {
-      message = error.detail;
-    } else {
-      message = `Request failed: ${response.status}`;
-    }
-
-    const err = new Error(message);
-    (err as any).status = response.status;
-    throw err;
-  }
-
-  return response.json() as Promise<T>;
+  return res.data;
 }
 
+/**
+ * The Bearer token is now injected automatically by `api/client.ts` interceptors.
+ * We keep the `token` parameter for backwards compatibility, but ignore it.
+ */
 export async function apiFetchAuth<T>(
   url: string,
-  token: string,
+  _token?: string,
   options?: RequestInit,
 ): Promise<T> {
-  return apiFetch<T>(url, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...options?.headers,
-    },
-  });
+  return apiFetch<T>(url, options);
 }
 
-// Shared extractor for RTK thunk errors
-export function extractError(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return 'An unexpected error occurred';
-}
-
-// AUTHORIZED FETCH — auto refresh + retry on 401
-
-let refreshPromise: Promise<string | null> | null = null;
-
-async function ensureFreshToken(forceRefresh = false): Promise<string | null> {
-  const state: RootState = store.getState();
-  const { token, tokenExpiresAt } = state.auth;
-
-  if (!token) return null;
-
-  const stillValid =
-    !forceRefresh && tokenExpiresAt && Date.now() < tokenExpiresAt - 60_000;
-  if (stillValid) return token;
-
-  if (!refreshPromise) {
-    const dispatch: AppDispatch = store.dispatch;
-    refreshPromise = dispatch(refreshAccessToken())
-      .unwrap()
-      .then(res => res.access_token as string)
-      .catch(() => null)
-      .finally(() => {
-        refreshPromise = null;
-      });
-  }
-
-  return refreshPromise;
-}
-
+/**
+ * Token checks, proactive refresh, 401 retries, and logout on session expiration
+ * are now completely handled centrally by `api/client.ts`.
+ */
 export async function authorizedFetch<T>(
   url: string,
   options?: RequestInit,
 ): Promise<T> {
-  const token = await ensureFreshToken();
-
-  if (!token) {
-    store.dispatch(logout());
-    throw new Error('Not authenticated');
-  }
-
-  try {
-    return await apiFetchAuth<T>(url, token, options);
-  } catch (err: any) {
-    if (err.status === 401) {
-      const newToken = await ensureFreshToken(true); // force refresh, bypass expiry check
-      if (!newToken) {
-        store.dispatch(logout());
-        throw err;
-      }
-      return apiFetchAuth<T>(url, newToken, options);
-    }
-    throw err;
-  }
+  return apiFetch<T>(url, options);
 }

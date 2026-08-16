@@ -1,13 +1,11 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { RootState } from '../../store';
+import { api } from '../../../api/client';
+import { extractError } from '../../../api/errors';
 import {
   BrowseRoom,
   CommunityRoom,
   PendingRequest,
 } from '../../../types/community';
-
-const BASE_URL = 'https://voita-backend.fly.dev/api/v1';
 
 const debugRequest = (label: string, data?: unknown) => {
   if (__DEV__) console.log(`[community] → ${label}`, data ?? '');
@@ -18,12 +16,6 @@ const debugResponse = (label: string, data?: unknown) => {
 const debugError = (label: string, error: unknown) => {
   if (__DEV__) console.log(`[community] ✕ ${label}`, error);
 };
-
-const extractError = (error: any): string =>
-  error?.response?.data?.detail ||
-  error?.response?.data?.message ||
-  error?.message ||
-  'Something went wrong';
 
 const mapCommunityRoom = (room: any): CommunityRoom => ({
   id: room.id,
@@ -60,15 +52,12 @@ const initialState: CommunityState = {
 
 export const fetchCommunityRooms = createAsyncThunk(
   'community/fetchCommunityRooms',
-  async (_, { getState, rejectWithValue }) => {
-    const token = (getState() as RootState).auth.token;
+  async (_, { rejectWithValue }) => {
     try {
-      debugRequest('GET /community/rooms/');
-      const res = await axios.get(`${BASE_URL}/community/rooms/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      debugResponse('GET /community/rooms/', res.data);
-      console.log('Community Room:', res.data);
+      debugRequest('GET /api/v1/community/rooms/');
+      // Switched to api instance — handles tokens and refresh transparently
+      const res = await api.get('/api/v1/community/rooms/');
+      debugResponse('GET /api/v1/community/rooms/', res.data);
 
       return {
         general: (res.data.general ?? []).map(mapCommunityRoom),
@@ -76,7 +65,7 @@ export const fetchCommunityRooms = createAsyncThunk(
         pendingRequests: res.data.pendingRequests ?? [],
       };
     } catch (error) {
-      debugError('GET /community/rooms/', error);
+      debugError('GET /api/v1/community/rooms/', error);
       return rejectWithValue(extractError(error));
     }
   },
@@ -84,17 +73,14 @@ export const fetchCommunityRooms = createAsyncThunk(
 
 export const fetchBrowseRooms = createAsyncThunk(
   'community/fetchBrowseRooms',
-  async (_, { getState, rejectWithValue }) => {
-    const token = (getState() as RootState).auth.token;
+  async (_, { rejectWithValue }) => {
     try {
-      debugRequest('GET /community/rooms/browse/');
-      const res = await axios.get(`${BASE_URL}/community/rooms/browse/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      debugResponse('GET /community/rooms/browse/', res.data);
+      debugRequest('GET /api/v1/community/rooms/browse/');
+      const res = await api.get('/api/v1/community/rooms/browse/');
+      debugResponse('GET /api/v1/community/rooms/browse/', res.data);
       return res.data as BrowseRoom[];
     } catch (error) {
-      debugError('GET /community/rooms/browse/', error);
+      debugError('GET /api/v1/community/rooms/browse/', error);
       return rejectWithValue(extractError(error));
     }
   },
@@ -102,23 +88,18 @@ export const fetchBrowseRooms = createAsyncThunk(
 
 export const requestJoinRoom = createAsyncThunk(
   'community/requestJoinRoom',
-  async (roomId: string, { getState, rejectWithValue }) => {
-    const token = (getState() as RootState).auth.token;
+  async (roomId: string, { rejectWithValue }) => {
     try {
-      debugRequest('POST /community/rooms/{id}/join', { roomId });
-      const res = await axios.post(
-        `${BASE_URL}/community/rooms/${roomId}/join`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      debugResponse('POST /community/rooms/{id}/join', res.data);
+      debugRequest('POST /api/v1/community/rooms/{id}/join', { roomId });
+      const res = await api.post(`/api/v1/community/rooms/${roomId}/join`, {});
+      debugResponse('POST /api/v1/community/rooms/{id}/join', res.data);
       return res.data as {
         roomId: string;
         roomName: string;
         requestedAt: string;
       };
     } catch (error) {
-      debugError('POST /community/rooms/{id}/join', error);
+      debugError('POST /api/v1/community/rooms/{id}/join', error);
       return rejectWithValue(extractError(error));
     }
   },
@@ -126,17 +107,14 @@ export const requestJoinRoom = createAsyncThunk(
 
 export const cancelJoinRequest = createAsyncThunk(
   'community/cancelJoinRequest',
-  async (roomId: string, { getState, rejectWithValue }) => {
-    const token = (getState() as RootState).auth.token;
+  async (roomId: string, { rejectWithValue }) => {
     try {
-      debugRequest('DELETE /community/rooms/{id}/join', { roomId });
-      await axios.delete(`${BASE_URL}/community/rooms/${roomId}/join`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      debugResponse('DELETE /community/rooms/{id}/join', { roomId });
+      debugRequest('DELETE /api/v1/community/rooms/{id}/join', { roomId });
+      await api.delete(`/api/v1/community/rooms/${roomId}/join`);
+      debugResponse('DELETE /api/v1/community/rooms/{id}/join', { roomId });
       return roomId;
     } catch (error) {
-      debugError('DELETE /community/rooms/{id}/join', error);
+      debugError('DELETE /api/v1/community/rooms/{id}/join', error);
       return rejectWithValue(extractError(error));
     }
   },

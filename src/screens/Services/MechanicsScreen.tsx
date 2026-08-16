@@ -6,11 +6,14 @@ import {
   StatusBar,
   ActivityIndicator,
   Text,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ServicesStackParamList } from '../../navigation/ServicesStack';
+import { useDeviceLocation } from '../../hooks/useDeviceLocation';
+import { MapPin } from 'lucide-react-native';
 
 import {
   fetchMechanics,
@@ -45,33 +48,66 @@ export default function MechanicsScreen() {
   const [search, setSearch] = useState('');
   const [activeType, setActiveType] = useState('all');
 
+  const NEARBY_RADIUS_KM = 10;
+
+  const {
+    enabled: filterByLocation,
+    loading: locationLoading,
+    coords,
+    toggle: toggleNearby,
+  } = useDeviceLocation();
+
   useEffect(() => {
     dispatch(
       fetchMechanics({
         type: activeType,
-        lat: undefined,
-        lng: undefined,
+        lat: coords?.lat,
+        lng: coords?.lng,
       }),
     );
     return () => {
       dispatch(clearErrors());
     };
-  }, [activeType]);
+  }, [activeType, coords]);
 
-  const filteredList = list.filter(
-    (m: { name: string; specialties: any[] }) => {
-      if (!search.trim()) return true;
-      const q = search.toLowerCase();
-      return (
-        m.name.toLowerCase().includes(q) ||
-        m.specialties.some(s => s.toLowerCase().includes(q))
-      );
-    },
-  );
+  const filteredList = list
+    .filter(
+      (m: {
+        id: string;
+        name: string;
+        specialties: any[];
+        distance_km: number | null;
+      }) => {
+        if (
+          filterByLocation &&
+          (m.distance_km == null || m.distance_km > NEARBY_RADIUS_KM)
+        ) {
+          return false;
+        }
+        if (!search.trim()) return true;
+        const q = search.toLowerCase();
+        return (
+          m.name.toLowerCase().includes(q) ||
+          m.specialties.some(s => s.toLowerCase().includes(q))
+        );
+      },
+    )
+    .sort((a, b) =>
+      filterByLocation
+        ? (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity)
+        : 0,
+    );
 
   const handleSearchSubmit = useCallback(() => {
-    dispatch(fetchMechanics({ search, type: activeType }));
-  }, [search, activeType]);
+    dispatch(
+      fetchMechanics({
+        search,
+        type: activeType,
+        lat: coords?.lat,
+        lng: coords?.lng,
+      }),
+    );
+  }, [search, activeType, coords]);
 
   const handleTypeChange = (id: string) => {
     setActiveType(id);
@@ -94,6 +130,40 @@ export default function MechanicsScreen() {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.header}>
+            <View style={styles.toggleRow}>
+              <TouchableOpacity
+                style={[
+                  styles.locationToggle,
+                  filterByLocation && styles.locationToggleActive,
+                ]}
+                onPress={toggleNearby}
+                activeOpacity={0.7}
+                disabled={locationLoading}
+              >
+                {locationLoading ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={filterByLocation ? '#FFFFFF' : '#10B981'}
+                  />
+                ) : (
+                  <>
+                    <MapPin
+                      size={14}
+                      color={filterByLocation ? '#FFFFFF' : '#10B981'}
+                      strokeWidth={2.5}
+                    />
+                    <Text
+                      style={[
+                        styles.locationToggleText,
+                        filterByLocation && styles.locationToggleTextActive,
+                      ]}
+                    >
+                      Nearby
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
             <SearchBar
               value={search}
               onChangeText={setSearch}
@@ -113,7 +183,7 @@ export default function MechanicsScreen() {
               id: item.id,
               name: item.name,
               rating: item.rating,
-              distanceMiles: item.distance_km ?? 0,
+              distanceMiles: item.distance_km,
               imageUri: item.image_url,
               verified: item.verified,
               availableToday: item.available_today,
@@ -148,6 +218,33 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F3F4F6', paddingBottom: 70 },
   list: { paddingHorizontal: 16, paddingBottom: 32 },
   header: { paddingTop: 8, paddingBottom: 8, gap: 12 },
+  toggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  locationToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#10B981',
+    backgroundColor: '#FFFFFF',
+  },
+  locationToggleActive: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  locationToggleText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#10B981',
+  },
+  locationToggleTextActive: {
+    color: '#FFFFFF',
+  },
   separator: { height: 14 },
   loader: { marginTop: 48 },
   errorText: {

@@ -1,6 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit';
 import mapsReducer from './slices/map/mapsSlice';
-import authReducer from './slices/auth/authSlice';
+import authReducer, {
+  logout,
+  refreshAccessToken,
+} from './slices/auth/authSlice';
+import { wireAuthBridge } from '../api/authBridge';
 import profileReducer from './slices/profile/profileSlice';
 import userReducer from './slices/user/userSlice';
 import vehicleReducer from './slices/vehicle/vehicleSlice';
@@ -13,6 +17,15 @@ import towingReducer from './slices/services/towingSlice';
 import scoutsReducer from './slices/services/scoutsSlice';
 import exploreReducer from './slices/services/exploreSlice';
 import notificationsReducer from './slices/notifications/notificationsSlice';
+
+wireAuthBridge({
+  getAuth: () => {
+    const { token, tokenExpiresAt } = store.getState().auth;
+    return { token, tokenExpiresAt };
+  },
+  refresh: () => store.dispatch(refreshAccessToken()).unwrap(),
+  logout: () => store.dispatch(logout()),
+});
 
 export const store = configureStore({
   reducer: {

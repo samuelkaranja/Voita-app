@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Star, CheckCircle } from 'lucide-react-native';
+import { formatDistance } from '../../../utils/formatDistance';
 
 export interface NearbyServiceItem {
   id: string;
@@ -8,7 +9,7 @@ export interface NearbyServiceItem {
   category: string;
   rating: number;
   reviewCount: number;
-  distanceKm: number;
+  distanceKm: number | null;
   imageUri: string;
   verified?: boolean;
 }
@@ -50,7 +51,10 @@ export const NearbyServiceCard: React.FC<NearbyServiceCardProps> = ({
           )}
         </View>
         <Text style={styles.category}>
-          {item.category} • {item.distanceKm} km away
+          {item.category}
+          {item.distanceKm != null
+            ? ` • ${formatDistance(item.distanceKm)} away`
+            : ''}
         </Text>
         <View style={styles.ratingRow}>
           <Star size={13} color="#F59E0B" fill="#F59E0B" strokeWidth={0} />

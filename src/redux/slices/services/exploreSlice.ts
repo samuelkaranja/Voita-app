@@ -42,14 +42,17 @@ function normalize(items: any[], category: ServiceCategory): ExploreProvider[] {
 
 export const fetchExploreData = createAsyncThunk<
   { topRated: ExploreProvider[]; recentlyAdded: ExploreProvider[] },
-  void
->('explore/fetchAll', async (_, { rejectWithValue }) => {
+  { lat?: number; lng?: number } | void
+>('explore/fetchAll', async (coords, { rejectWithValue }) => {
   try {
+    const lat = coords?.lat;
+    const lng = coords?.lng;
+
     const [mechanics, carWashes, towing, scouts] = await Promise.all([
-      apiFetch<any[]>(buildUrl('/mechanics/')),
-      apiFetch<any[]>(buildUrl('/car-washes/')),
-      apiFetch<any[]>(buildUrl('/towing-providers/')),
-      apiFetch<any[]>(buildUrl('/scouts/')),
+      apiFetch<any[]>(buildUrl('/api/v1/mechanics/', { lat, lng })),
+      apiFetch<any[]>(buildUrl('/api/v1/car-washes/', { lat, lng })),
+      apiFetch<any[]>(buildUrl('/api/v1/towing-providers/', { lat, lng })),
+      apiFetch<any[]>(buildUrl('/api/v1/scouts/', { lat, lng })),
     ]);
 
     const mechanicsNorm = normalize(mechanics, 'mechanic');

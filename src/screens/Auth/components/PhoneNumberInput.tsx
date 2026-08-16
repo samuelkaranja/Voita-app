@@ -10,14 +10,12 @@ interface PhoneNumberInputProps {
 }
 
 export const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
-  label = 'PHONE NUMBER',
   value,
   onChangeText,
   placeholder = '07xxxxxxxx',
 }) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
       <View style={styles.inputRow}>
         {/* <View style={styles.prefixChip}>
           <Text style={styles.flag}>🇰🇪</Text>
@@ -28,8 +26,8 @@ export const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
           style={styles.input}
           value={value}
           onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={colors.textMuted}
+          placeholder="Phone Number"
+          placeholderTextColor="#0d2b1f"
           keyboardType="phone-pad"
           maxLength={10}
         />
@@ -50,11 +48,24 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#eef1ef',
     borderRadius: 16,
     backgroundColor: colors.inputBackground,
     paddingHorizontal: spacing.md,
+
+    /* iOS shadow */
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+
+    /* Android shadow */
+    elevation: 2,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.textPrimary,
+    paddingVertical: 20,
   },
   prefixChip: {
     flexDirection: 'row',
@@ -68,11 +79,5 @@ const styles = StyleSheet.create({
     height: 24,
     backgroundColor: '#E5E7EB',
     marginHorizontal: spacing.md,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.textPrimary,
-    paddingVertical: spacing.md,
   },
 });

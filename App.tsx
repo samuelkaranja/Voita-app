@@ -10,6 +10,7 @@ import RootNavigator from './src/navigation/RootNavigator';
 import Toast from 'react-native-toast-message';
 import { loadStoredAuth } from './src/redux/slices/auth/authSlice';
 import type { AppDispatch } from './src/redux/store';
+import { toastConfig } from './toastConfig.tsx';
 
 enableScreens();
 
@@ -30,7 +31,7 @@ export default function App() {
         <NavigationContainer>
           <BottomSheetModalProvider>
             <AppContent />
-            <Toast position="top" visibilityTime={6000} />
+            <Toast config={toastConfig} position="top" visibilityTime={6000} />
           </BottomSheetModalProvider>
         </NavigationContainer>
       </Provider>

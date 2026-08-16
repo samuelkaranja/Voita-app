@@ -69,17 +69,13 @@ export default function SuggestServiceScreen() {
   const navigation = useNavigation<NavProp>();
   const dispatch = useAppDispatch();
 
-  const [category, setCategory] = useState<Category | null>(null);
+  const [category, setCategory] = useState<Category | null>('mechanic');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [location, setLocation] = useState('');
   const [type, setType] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [containerHeight, setContainerHeight] = useState(0);
-  const [contentHeight, setContentHeight] = useState(0);
-
-  const scrollEnabled = contentHeight > containerHeight;
 
   const selectedCategory = CATEGORY_OPTIONS.find(c => c.id === category);
 
@@ -152,18 +148,15 @@ export default function SuggestServiceScreen() {
         >
           <ChevronLeft size={22} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Suggest a Service</Text>
+        <Text style={styles.headerTitle}>Suggest a Service Provider</Text>
         <View style={styles.backBtn} />
       </View>
 
       <ScrollView
+        style={styles.scroll}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
-        scrollEnabled={scrollEnabled}
-        bounces={scrollEnabled}
-        onLayout={e => setContainerHeight(e.nativeEvent.layout.height)}
-        onContentSizeChange={(w, h) => setContentHeight(h)}
       >
         <Text style={styles.label}>What kind of service?</Text>
         <View style={styles.categoryRow}>
@@ -295,6 +288,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  scroll: { flex: 1 },
   headerTitle: {
     flex: 1,
     textAlign: 'center',
@@ -302,7 +296,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
   },
-  content: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 60 },
+  content: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 120 },
   label: {
     fontSize: 12,
     fontWeight: '600',
@@ -310,7 +304,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 16,
   },
-  categoryRow: { flexDirection: 'row', gap: 10 },
+  categoryRow: { flexDirection: 'row', gap: 10, marginBottom: 8 },
   categoryCard: {
     flex: 1,
     alignItems: 'center',

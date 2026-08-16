@@ -8,12 +8,13 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Star, MapPin, Clock, ShieldCheck } from 'lucide-react-native';
+import { formatDistance } from '../../../../utils/formatDistance';
 
 export interface CarWashItem {
   id: string;
   name: string;
   rating: number;
-  distanceKm: number;
+  distanceKm: number | null;
   area: string;
   imageUri: string;
   waitMins: number;
@@ -78,7 +79,10 @@ export const CarWashCard: React.FC<CarWashCardProps> = ({
         <View style={styles.locationRow}>
           <MapPin size={12} color="#9CA3AF" strokeWidth={2} />
           <Text style={styles.locationText}>
-            {item.distanceKm} km • {item.area}
+            {item.distanceKm != null
+              ? `${formatDistance(item.distanceKm)} • `
+              : ''}
+            {item.area}
           </Text>
         </View>
 

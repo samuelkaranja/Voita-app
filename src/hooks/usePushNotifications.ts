@@ -30,7 +30,13 @@ export const usePushNotifications = () => {
   const hasInitialized = useRef(false);
 
   useEffect(() => {
-    if (!authToken || hasInitialized.current) return;
+    if (!authToken) {
+      // Logged out — clear the guard so the next login (possibly a
+      // different user on the same device) re-registers its own token.
+      hasInitialized.current = false;
+      return;
+    }
+    if (hasInitialized.current) return;
     hasInitialized.current = true;
 
     const setup = async () => {
@@ -58,31 +64,20 @@ export const usePushNotifications = () => {
         //console.log('🟢 [usePushNotifications] FCM token:', fcmToken);
 
         if (fcmToken) {
-          console.log('🟣 ABOUT TO DISPATCH registerFCMToken');
           dispatch(
             registerFCMToken({
               fcm_token: fcmToken,
               platform: Platform.OS as 'ios' | 'android',
             }),
-          );
-        }
-
-        if (fcmToken) {
-          dispatch(
-            registerFCMToken({
-              fcm_token: fcmToken,
-              platform: Platform.OS as 'ios' | 'android',
-            }),
-          )
-            .unwrap()
-            .then(() => {
-              if (__DEV__) {
-                Toast.show({
-                  type: 'success',
-                  text1: 'Push notifications enabled',
-                });
-              }
-            });
+          ).unwrap();
+          // .then(() => {
+          //   if (__DEV__) {
+          //     Toast.show({
+          //       type: 'success',
+          //       text1: 'Push notifications enabled',
+          //     });
+          //   }
+          // });
         }
       } catch (err) {
         console.log('🔴 [usePushNotifications] Setup error:', err);

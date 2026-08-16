@@ -1,12 +1,12 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import {
   apiFetch,
-  apiFetchAuth,
+  authorizedFetch,
   buildUrl,
   extractError,
 } from '../../../services/api';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// Types
 
 export interface ScoutSkill {
   id: string;
@@ -25,7 +25,7 @@ export interface ScoutReview {
 
 export type ScoutCTAType = 'book' | 'request' | 'schedule';
 
-// Shape returned by GET /scouts/ (list)
+// Shape returned by GET /api/v1/scouts/ (list)
 export interface ScoutListItem {
   id: string;
   name: string;
@@ -39,7 +39,7 @@ export interface ScoutListItem {
   tags: string[];
 }
 
-// Shape returned by GET /scouts/{id} (detail)
+// Shape returned by GET /api/v1/scouts/{id}/ (detail)
 export interface ScoutDetail {
   id: string;
   name: string;
@@ -102,14 +102,14 @@ interface ScoutsState {
   missionsError: string | null;
 }
 
-// ── Thunks ────────────────────────────────────────────────────────────────────
+// Thunks
 
 export const fetchScouts = createAsyncThunk<
   ScoutListItem[],
   ScoutFilters | undefined
 >('scouts/fetchList', async (filters = {}, { rejectWithValue }) => {
   try {
-    const url = buildUrl('/scouts/', {
+    const url = buildUrl('/api/v1/scouts/', {
       search: filters.search,
       category:
         filters.category && filters.category !== 'all'
@@ -127,7 +127,7 @@ export const fetchScoutDetail = createAsyncThunk<ScoutDetail, string>(
   'scouts/fetchDetail',
   async (scoutId, { rejectWithValue }) => {
     try {
-      const url = buildUrl(`/scouts/${scoutId}/`);
+      const url = buildUrl(`/api/v1/scouts/${scoutId}/`);
       return await apiFetch<ScoutDetail>(url);
     } catch (err) {
       return rejectWithValue(extractError(err));
@@ -135,34 +135,34 @@ export const fetchScoutDetail = createAsyncThunk<ScoutDetail, string>(
   },
 );
 
-export const fetchUserMissions = createAsyncThunk<Mission[], string>(
+export const fetchUserMissions = createAsyncThunk<Mission[], void>(
   'scouts/fetchMissions',
-  async (token, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const url = buildUrl('/scouts/missions/user/');
-      return await apiFetchAuth<Mission[]>(url, token);
+      const url = buildUrl('/api/v1/scouts/missions/user/');
+      return await authorizedFetch<Mission[]>(url);
     } catch (err) {
       return rejectWithValue(extractError(err));
     }
   },
 );
 
-export const createMission = createAsyncThunk<
-  Mission,
-  { token: string; payload: CreateMissionPayload }
->('scouts/createMission', async ({ token, payload }, { rejectWithValue }) => {
-  try {
-    const url = buildUrl('/scouts/missions/');
-    return await apiFetchAuth<Mission>(url, token, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-  } catch (err) {
-    return rejectWithValue(extractError(err));
-  }
-});
+export const createMission = createAsyncThunk<Mission, CreateMissionPayload>(
+  'scouts/createMission',
+  async (payload, { rejectWithValue }) => {
+    try {
+      const url = buildUrl('/api/v1/scouts/missions/');
+      return await authorizedFetch<Mission>(url, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      return rejectWithValue(extractError(err));
+    }
+  },
+);
 
-// ── Slice ─────────────────────────────────────────────────────────────────────
+// Slice
 
 const initialState: ScoutsState = {
   list: [],

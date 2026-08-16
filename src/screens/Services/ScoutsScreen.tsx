@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Text,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -23,7 +24,7 @@ import { OnlineIndicator } from './components/scouts/OnlineIndicator';
 import { MissionItem } from './components/scouts/MissionItem';
 import { SectionHeader } from './components/SectionHeader';
 import { MapFAB } from './components/MapFAB';
-import { Truck, FileText } from 'lucide-react-native';
+import { Truck, FileText, MapPin } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../../redux/hooks';
 
 const SCOUT_FILTERS = [
@@ -51,6 +52,7 @@ export default function ScoutsScreen() {
 
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
+  const [filterByLocation, setFilterByLocation] = useState(false);
 
   useEffect(() => {
     dispatch(fetchScouts({ category: activeFilter }));
@@ -80,6 +82,30 @@ export default function ScoutsScreen() {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.header}>
+            <View style={styles.toggleRow}>
+              <TouchableOpacity
+                style={[
+                  styles.locationToggle,
+                  filterByLocation && styles.locationToggleActive,
+                ]}
+                onPress={() => setFilterByLocation(prev => !prev)}
+                activeOpacity={0.7}
+              >
+                <MapPin
+                  size={14}
+                  color={filterByLocation ? '#FFFFFF' : '#10B981'}
+                  strokeWidth={2.5}
+                />
+                <Text
+                  style={[
+                    styles.locationToggleText,
+                    filterByLocation && styles.locationToggleTextActive,
+                  ]}
+                >
+                  Nearby
+                </Text>
+              </TouchableOpacity>
+            </View>
             <ScoutHeroBanner
               search={search}
               onSearchChange={setSearch}
@@ -162,6 +188,33 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F3F4F6', paddingBottom: 70 },
   list: { paddingHorizontal: 16, paddingBottom: 40 },
   header: { paddingTop: 8, paddingBottom: 8, gap: 16 },
+  toggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  locationToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#10B981',
+    backgroundColor: '#FFFFFF',
+  },
+  locationToggleActive: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  locationToggleText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#10B981',
+  },
+  locationToggleTextActive: {
+    color: '#FFFFFF',
+  },
   footer: { paddingTop: 20, gap: 12, paddingBottom: 60 },
   loader: { marginTop: 48 },
   errorText: {

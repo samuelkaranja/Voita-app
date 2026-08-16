@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { BASE_URL } from '../../../api/config';
+import { api } from '../../../api/client';
+import { extractError } from '../../../api/errors';
 
 // Debug helpers
 
@@ -24,15 +24,6 @@ const debugError = (name: string, err: any) => {
       headers: err.config?.headers,
     });
   }
-};
-
-// Safe error extractor
-
-const extractError = (err: any): string => {
-  const detail = err.response?.data?.detail;
-  if (typeof detail === 'string') return detail;
-  if (Array.isArray(detail)) return detail.map((e: any) => e.msg).join(', ');
-  return err.message || 'Request failed';
 };
 
 // Types
@@ -65,38 +56,20 @@ const initialState: NotificationsState = {
   error: null,
 };
 
-// Auth header helper
-
-const authHeader = (token: string) => ({
-  headers: { Authorization: `Bearer ${token}` },
-});
-
 // REGISTER TOKEN
 
 export const registerFCMToken = createAsyncThunk(
   'notifications/registerToken',
   async (
     data: { fcm_token: string; platform: string; device_name?: string },
-    { getState, rejectWithValue },
+    { rejectWithValue },
   ) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
     try {
       debugRequest('registerFCMToken', {
-        url: `${BASE_URL}/api/v1/notifications/register-token`,
-        token: token ? `${token.substring(0, 20)}...` : 'NULL ⚠️',
+        url: '/api/v1/notifications/register-token',
         data,
       });
-      const res = await axios.post(
-        `${BASE_URL}/api/v1/notifications/register-token`,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
+      const res = await api.post('/api/v1/notifications/register-token', data);
       debugResponse('registerFCMToken', res.data);
       return { ...res.data, fcm_token: data.fcm_token };
     } catch (err: any) {
@@ -110,14 +83,9 @@ export const registerFCMToken = createAsyncThunk(
 
 export const fetchMyTokens = createAsyncThunk(
   'notifications/fetchMyTokens',
-  async (_, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+  async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(
-        `${BASE_URL}/api/v1/notifications/my-tokens`,
-        authHeader(token),
-      );
+      const res = await api.get('/api/v1/notifications/my-tokens');
       return res.data.tokens as FCMTokenRecord[]; // ← unwrap .tokens
     } catch (err: any) {
       return rejectWithValue(extractError(err));
@@ -129,14 +97,9 @@ export const fetchMyTokens = createAsyncThunk(
 
 export const deleteFCMToken = createAsyncThunk(
   'notifications/deleteToken',
-  async (tokenId: string, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+  async (tokenId: string, { rejectWithValue }) => {
     try {
-      await axios.delete(
-        `${BASE_URL}/api/v1/notifications/tokens/${tokenId}`,
-        authHeader(token),
-      );
+      await api.delete(`/api/v1/notifications/tokens/${tokenId}`);
       return tokenId;
     } catch (err: any) {
       return rejectWithValue(extractError(err));

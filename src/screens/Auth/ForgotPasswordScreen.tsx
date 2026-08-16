@@ -46,7 +46,9 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.container}>
-        <AuthHeader showBackButton={true} logoAlign="center" />
+        <View style={styles.headerWrap}>
+          <AuthHeader showBackButton={false} logoAlign="center" />
+        </View>
 
         <View style={styles.content}>
           {/* <IconBadge icon={MessageSquareText} /> */}
@@ -84,7 +86,12 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: { flex: 1, backgroundColor: colors.background },
-  content: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl },
+  headerWrap: { paddingTop: 20, paddingBottom: 15 },
+  content: {
+    flex: 1, // take all space below the header
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
   title: {
     fontSize: 28,
     fontWeight: '800',
@@ -104,5 +111,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
   },
   footerText: { fontSize: 14, color: colors.textSecondary },
-  footerLink: { fontSize: 14, fontWeight: '700', color: colors.brandGreen },
+  footerLink: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.brandGreen,
+    textDecorationLine: 'underline',
+  },
 });

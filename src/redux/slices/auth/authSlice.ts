@@ -1,4 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { api } from '../../../api/client';
+import { extractError, isAuthError } from '../../../api/errors';
 import axios from 'axios';
 import { BASE_URL } from '../../../api/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -89,6 +91,35 @@ export const loadStoredAuth = createAsyncThunk(
         await AsyncStorage.removeItem('authData');
         return null;
       }
+
+      // ── NEW: token already dead (or dies within 60s) → refresh before restoring
+      if (!tokenExpiresAt || Date.now() > tokenExpiresAt - 60_000) {
+        try {
+          const res = await axios.post(`${BASE_URL}/api/v1/auth/refresh`, {
+            refresh_token: refreshToken,
+          });
+
+          await storeRefreshToken(res.data.refresh_token); // rotation
+
+          const newExpiry =
+            Date.now() + (Number(res.data.expires_in) || 1800) * 1000;
+
+          const fresh = {
+            token: res.data.access_token,
+            user,
+            tokenExpiresAt: newExpiry,
+          };
+
+          await AsyncStorage.setItem('authData', JSON.stringify(fresh));
+          return fresh;
+        } catch {
+          // refresh token expired/revoked — wipe everything, force re-login
+          await clearRefreshToken();
+          await AsyncStorage.removeItem('authData');
+          return null;
+        }
+      }
+      // ── END NEW
 
       return { token, user, tokenExpiresAt };
     } catch (err) {
@@ -203,19 +234,13 @@ export const loginUser = createAsyncThunk(
 export const sendVerificationEmail = createAsyncThunk(
   'auth/sendVerificationEmail',
   async (_, { getState, rejectWithValue }) => {
-    const token = (getState() as any).auth.token;
-    if (!token) return rejectWithValue('Not authenticated');
+    if (!(getState() as any).auth.token)
+      return rejectWithValue('Not authenticated');
     try {
-      const res = await axios.post(
-        `${BASE_URL}/api/v1/auth/send-verification-email`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const res = await api.post('/api/v1/auth/send-verification-email', {});
       return res.data;
     } catch (err: any) {
-      return rejectWithValue(
-        err.response?.data?.detail || 'Failed to send verification email',
-      );
+      return rejectWithValue(extractError(err));
     }
   },
 );
@@ -358,7 +383,8 @@ const authSlice = createSlice({
       })
       .addCase(refreshAccessToken.fulfilled, (state, action) => {
         state.loading.refresh = false;
-        const expiresAt = Date.now() + action.payload.expires_in * 1000;
+        const expiresIn = Number(action.payload.expires_in) || 1800;
+        const expiresAt = Date.now() + expiresIn * 1000;
 
         state.token = action.payload.access_token;
         state.tokenExpiresAt = expiresAt;

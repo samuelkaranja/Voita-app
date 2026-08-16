@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   ScrollView,
@@ -33,6 +33,7 @@ import { SpecialistCard } from './components/SpecialistCard';
 import { NearbyServiceCard } from './components/NearbyServiceCard';
 import { SectionHeader } from './components/SectionHeader';
 import { CategoryBadge } from './components/CategoryBadge';
+import { useDeviceLocation } from '../../hooks/useDeviceLocation';
 
 type NavigationProp = NativeStackNavigationProp<ServicesStackParamList>;
 
@@ -69,15 +70,39 @@ const PARAM_KEYS: Record<ServiceCategory, string> = {
 export default function ExploreScreen() {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useAppDispatch();
-  const [filterByLocation, setFilterByLocation] = useState(false);
+
+  const NEARBY_RADIUS_KM = 10;
+
+  const {
+    enabled: filterByLocation,
+    loading: locationLoading,
+    coords,
+    toggle: toggleNearby,
+  } = useDeviceLocation();
+
+  useEffect(() => {
+    dispatch(
+      fetchExploreData(
+        coords ? { lat: coords.lat, lng: coords.lng } : undefined,
+      ),
+    );
+  }, [coords]);
 
   const { topRated, recentlyAdded, loading, error } = useAppSelector(
     s => s.explore,
   );
 
-  useEffect(() => {
-    dispatch(fetchExploreData());
-  }, []);
+  const visibleTopRated = filterByLocation
+    ? topRated.filter(
+        sp => sp.distance_km != null && sp.distance_km <= NEARBY_RADIUS_KM,
+      )
+    : topRated;
+
+  const visibleRecentlyAdded = filterByLocation
+    ? recentlyAdded.filter(
+        svc => svc.distance_km != null && svc.distance_km <= NEARBY_RADIUS_KM,
+      )
+    : recentlyAdded;
 
   const tabBarClearance = useTabBarClearance();
 
@@ -109,22 +134,32 @@ export default function ExploreScreen() {
               styles.locationToggle,
               filterByLocation && styles.locationToggleActive,
             ]}
-            onPress={() => setFilterByLocation(prev => !prev)}
+            onPress={toggleNearby}
             activeOpacity={0.7}
+            disabled={locationLoading}
           >
-            <MapPin
-              size={14}
-              color={filterByLocation ? '#FFFFFF' : '#10B981'}
-              strokeWidth={2.5}
-            />
-            <Text
-              style={[
-                styles.locationToggleText,
-                filterByLocation && styles.locationToggleTextActive,
-              ]}
-            >
-              Near me
-            </Text>
+            {locationLoading ? (
+              <ActivityIndicator
+                size="small"
+                color={filterByLocation ? '#FFFFFF' : '#10B981'}
+              />
+            ) : (
+              <>
+                <MapPin
+                  size={14}
+                  color={filterByLocation ? '#FFFFFF' : '#10B981'}
+                  strokeWidth={2.5}
+                />
+                <Text
+                  style={[
+                    styles.locationToggleText,
+                    filterByLocation && styles.locationToggleTextActive,
+                  ]}
+                >
+                  Nearby
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -163,7 +198,7 @@ export default function ExploreScreen() {
         ) : (
           <>
             {/* Top Rated Specialists */}
-            {topRated.length > 0 && (
+            {topRated.length > 0 && ( // → visibleTopRated.length > 0 &&
               <View style={styles.specialistSection}>
                 <SectionHeader title="Top Rated Specialists" />
                 <ScrollView
@@ -171,51 +206,68 @@ export default function ExploreScreen() {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.rowGap}
                 >
-                  {topRated.map(sp => (
-                    <SpecialistCard
-                      key={`${sp.category}-${sp.id}`}
-                      item={{
-                        id: sp.id,
-                        name: sp.name,
-                        rating: sp.rating,
-                        distanceKm: sp.distance_km ?? 0,
-                        imageUri: sp.image_url,
-                        verified: sp.verified,
-                      }}
-                      onPress={() => handleProviderPress(sp.id, sp.category)}
-                    />
-                  ))}
+                  {topRated.map(
+                    (
+                      sp, // → visibleTopRated.map(sp =>
+                    ) => (
+                      <SpecialistCard
+                        key={`${sp.category}-${sp.id}`}
+                        item={{
+                          id: sp.id,
+                          name: sp.name,
+                          rating: sp.rating,
+                          distanceKm: sp.distance_km,
+                          imageUri: sp.image_url,
+                          verified: sp.verified,
+                        }}
+                        onPress={() => handleProviderPress(sp.id, sp.category)}
+                      />
+                    ),
+                  )}
                 </ScrollView>
               </View>
             )}
 
             {/* Recently Added */}
-            {recentlyAdded.length > 0 && (
+            {recentlyAdded.length > 0 && ( // → visibleRecentlyAdded.length > 0 &&
               <View style={styles.section}>
                 <SectionHeader title="Recently Added" />
                 <View style={styles.nearbyList}>
-                  {recentlyAdded.map(svc => (
-                    <NearbyServiceCard
-                      key={`${svc.category}-${svc.id}`}
-                      item={{
-                        id: svc.id,
-                        name: svc.name,
-                        category: svc.category,
-                        rating: svc.rating,
-                        reviewCount: 0,
-                        distanceKm: svc.distance_km ?? 0,
-                        imageUri: svc.image_url,
-                        verified: svc.verified,
-                      }}
-                      onPress={() => handleProviderPress(svc.id, svc.category)}
-                      onViewDetails={() =>
-                        handleProviderPress(svc.id, svc.category)
-                      }
-                    />
-                  ))}
+                  {recentlyAdded.map(
+                    (
+                      svc, // → visibleRecentlyAdded.map(svc =>
+                    ) => (
+                      <NearbyServiceCard
+                        key={`${svc.category}-${svc.id}`}
+                        item={{
+                          id: svc.id,
+                          name: svc.name,
+                          category: svc.category,
+                          rating: svc.rating,
+                          reviewCount: 0,
+                          distanceKm: svc.distance_km,
+                          imageUri: svc.image_url,
+                          verified: svc.verified,
+                        }}
+                        onPress={() =>
+                          handleProviderPress(svc.id, svc.category)
+                        }
+                        onViewDetails={() =>
+                          handleProviderPress(svc.id, svc.category)
+                        }
+                      />
+                    ),
+                  )}
                 </View>
               </View>
             )}
+
+            {/* NEW: empty state for Nearby toggle */}
+            {filterByLocation &&
+              visibleTopRated.length === 0 &&
+              visibleRecentlyAdded.length === 0 && (
+                <Text style={styles.emptyText}>No nearby services found</Text>
+              )}
           </>
         )}
 
@@ -301,6 +353,12 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   nearbyList: { gap: 12 },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 32,
+    color: '#9CA3AF',
+    fontSize: 14,
+  },
   fab: {
     position: 'absolute',
     right: 16,

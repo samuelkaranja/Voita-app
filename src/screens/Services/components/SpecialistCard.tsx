@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { MapPin, Star, CheckCircle } from 'lucide-react-native';
+import { formatDistance } from '../../../utils/formatDistance';
 
 export interface SpecialistItem {
   id: string;
   name: string;
   rating: number;
-  distanceKm: number;
+  distanceKm: number | null;
   imageUri: string;
   verified?: boolean;
 }
@@ -43,10 +44,14 @@ export const SpecialistCard: React.FC<SpecialistCardProps> = ({
           {item.name}
         </Text>
         <View style={styles.meta}>
-          <View style={styles.metaRow}>
-            <MapPin size={11} color="#9CA3AF" strokeWidth={2} />
-            <Text style={styles.metaText}>{item.distanceKm} km away</Text>
-          </View>
+          {item.distanceKm != null && (
+            <View style={styles.metaRow}>
+              <MapPin size={11} color="#9CA3AF" strokeWidth={2} />
+              <Text style={styles.metaText}>
+                {formatDistance(item.distanceKm)} away
+              </Text>
+            </View>
+          )}
           <View style={styles.metaRow}>
             <Star size={11} color="#F59E0B" strokeWidth={0} fill="#F59E0B" />
             <Text style={styles.metaText}>{item.rating.toFixed(1)}</Text>

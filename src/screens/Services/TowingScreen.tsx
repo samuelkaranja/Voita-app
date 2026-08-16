@@ -6,11 +6,14 @@ import {
   StatusBar,
   ActivityIndicator,
   Text,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ServicesStackParamList } from '../../navigation/ServicesStack';
+import { useDeviceLocation } from '../../hooks/useDeviceLocation';
+import { MapPin } from 'lucide-react-native';
 
 import {
   fetchTowingProviders,
@@ -39,12 +42,43 @@ export default function TowingScreen() {
   const { list, listLoading, listError } = useAppSelector(s => s.towing);
   const [activeType, setActiveType] = useState('all');
 
+  const NEARBY_RADIUS_KM = 10;
+
+  const {
+    enabled: filterByLocation,
+    loading: locationLoading,
+    coords,
+    toggle: toggleNearby,
+  } = useDeviceLocation();
+
   useEffect(() => {
-    dispatch(fetchTowingProviders({ type: activeType }));
+    dispatch(
+      fetchTowingProviders({
+        type: activeType,
+        lat: coords?.lat,
+        lng: coords?.lng,
+      }),
+    );
     return () => {
       dispatch(clearErrors());
     };
-  }, [activeType]);
+  }, [activeType, coords]);
+
+  const filteredList = list
+    .filter(t => {
+      if (
+        filterByLocation &&
+        (t.distance_km == null || t.distance_km > NEARBY_RADIUS_KM)
+      ) {
+        return false;
+      }
+      return true;
+    })
+    .sort((a, b) =>
+      filterByLocation
+        ? (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity)
+        : 0,
+    );
 
   const chipFilters = TYPE_FILTERS.map(f => ({
     ...f,
@@ -57,12 +91,46 @@ export default function TowingScreen() {
       <ScreenHeader title="Towing" />
 
       <FlatList
-        data={list}
+        data={filteredList}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.header}>
+            <View style={styles.toggleRow}>
+              <TouchableOpacity
+                style={[
+                  styles.locationToggle,
+                  filterByLocation && styles.locationToggleActive,
+                ]}
+                onPress={toggleNearby}
+                activeOpacity={0.7}
+                disabled={locationLoading}
+              >
+                {locationLoading ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={filterByLocation ? '#FFFFFF' : '#10B981'}
+                  />
+                ) : (
+                  <>
+                    <MapPin
+                      size={14}
+                      color={filterByLocation ? '#FFFFFF' : '#10B981'}
+                      strokeWidth={2.5}
+                    />
+                    <Text
+                      style={[
+                        styles.locationToggleText,
+                        filterByLocation && styles.locationToggleTextActive,
+                      ]}
+                    >
+                      Nearby
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
             <EmergencyBanner onDispatch={() => {}} />
             <FilterChips
               filters={chipFilters}
@@ -77,7 +145,7 @@ export default function TowingScreen() {
               name: item.name,
               rating: item.rating,
               reviewCount: item.review_count,
-              distanceKm: item.distance_km ?? 0,
+              distanceKm: item.distance_km,
               etaMin: item.eta_min,
               etaMax: item.eta_max,
               tags: item.tags,
@@ -106,7 +174,7 @@ export default function TowingScreen() {
           )
         }
         ListFooterComponent={
-          !listLoading && list.length > 0 ? (
+          !listLoading && filteredList.length > 0 ? (
             <View style={styles.footer}>
               <SafetyFooter />
             </View>
@@ -121,6 +189,33 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F3F4F6' },
   list: { paddingHorizontal: 16, paddingBottom: 40 },
   header: { paddingTop: 8, paddingBottom: 8, gap: 14 },
+  toggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  locationToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#10B981',
+    backgroundColor: '#FFFFFF',
+  },
+  locationToggleActive: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  locationToggleText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#10B981',
+  },
+  locationToggleTextActive: {
+    color: '#FFFFFF',
+  },
   footer: { paddingTop: 20, paddingBottom: 60 },
   loader: { marginTop: 48 },
   errorText: {

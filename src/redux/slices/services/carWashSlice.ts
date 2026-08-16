@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import {
   apiFetch,
-  apiFetchAuth,
+  authorizedFetch,
   buildUrl,
   extractError,
 } from '../../../services/api';
@@ -24,7 +24,7 @@ export interface CarWashReview {
   comment: string;
 }
 
-// Shape returned by GET /car-washes/ (list)
+// Shape returned by GET /api/v1/car-washes/ (list)
 export interface CarWashListItem {
   id: string;
   name: string;
@@ -37,7 +37,7 @@ export interface CarWashListItem {
   tags: string[];
 }
 
-// Shape returned by GET /car-washes/{id} (detail)
+// Shape returned by GET /api/v1/car-washes/{id} (detail)
 export interface CarWashDetail {
   id: string;
   name: string;
@@ -86,7 +86,7 @@ export const fetchCarWashes = createAsyncThunk<
   CarWashFilters | undefined
 >('carwash/fetchList', async (filters = {}, { rejectWithValue }) => {
   try {
-    const url = buildUrl('/car-washes/', {
+    const url = buildUrl('/api/v1/car-washes/', {
       search: filters.search,
       type: filters.type && filters.type !== 'all' ? filters.type : undefined,
       lat: filters.lat,
@@ -102,7 +102,7 @@ export const fetchCarWashDetail = createAsyncThunk<CarWashDetail, string>(
   'carwash/fetchDetail',
   async (carWashId, { rejectWithValue }) => {
     try {
-      const url = buildUrl(`/car-washes/${carWashId}`);
+      const url = buildUrl(`/api/v1/car-washes/${carWashId}`);
       return await apiFetch<CarWashDetail>(url);
     } catch (err) {
       return rejectWithValue(extractError(err));
@@ -112,11 +112,10 @@ export const fetchCarWashDetail = createAsyncThunk<CarWashDetail, string>(
 
 export const suggestCarWash = createAsyncThunk<void, CarWashSuggestionPayload>(
   'carwash/suggest',
-  async (payload, { getState, rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      const token = (getState() as any).auth.token;
-      const url = buildUrl('/car-washes/suggestions/');
-      await apiFetchAuth<void>(url, token, {
+      const url = buildUrl('/api/v1/car-washes/suggestions/');
+      await authorizedFetch<void>(url, {
         method: 'POST',
         body: JSON.stringify(payload),
       });

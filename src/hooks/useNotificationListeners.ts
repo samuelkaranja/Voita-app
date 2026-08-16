@@ -42,6 +42,10 @@ export const useNotificationListeners = () => {
         type: 'info',
         text1: remoteMessage.notification?.title ?? 'Notification',
         text2: remoteMessage.notification?.body,
+        position: 'top',
+        visibilityTime: 8000,
+        autoHide: true,
+        topOffset: 60,
         onPress: () => handleNotificationNavigation(remoteMessage.data),
       });
     });

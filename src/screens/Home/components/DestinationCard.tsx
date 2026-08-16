@@ -12,7 +12,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { Navigation } from 'lucide-react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { useKeyboardOffset } from '../../../hooks/useKeyboardOffset';
 
@@ -21,19 +20,28 @@ import { store } from '../../../redux/store';
 
 const GOOGLE_KEY = 'AIzaSyDAaZnQ6p4Zase38K03Rk8LbCyGlfmaUCg';
 
-export default function DestinationCard({ style }: { style?: any }) {
+export default function DestinationCard({
+  bottomOffset,
+}: {
+  bottomOffset: number;
+}) {
   const dispatch = useDispatch();
-  const keyboardHeight = useKeyboardOffset();
+  const keyboardOffset = useKeyboardOffset();
+  const KEYBOARD_GAP = 8;
 
   const userPhone = useSelector((state: any) => state.auth.user?.phone);
-  const insets = useSafeAreaInsets();
 
   const [text, setText] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: -keyboardHeight.value }],
+    transform: [
+      {
+        translateY:
+          keyboardOffset.value > 0 ? -(keyboardOffset.value + KEYBOARD_GAP) : 0,
+      },
+    ],
   }));
 
   const HISTORY_KEY = userPhone
@@ -188,7 +196,9 @@ export default function DestinationCard({ style }: { style?: any }) {
   };
 
   return (
-    <Animated.View style={[styles.container, style, animatedStyle]}>
+    <Animated.View
+      style={[styles.container, { bottom: bottomOffset }, animatedStyle]}
+    >
       <Text style={styles.title}>Destination</Text>
 
       {/* INPUT */}

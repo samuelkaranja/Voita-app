@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import {
   apiFetch,
-  apiFetchAuth,
+  authorizedFetch,
   buildUrl,
   extractError,
 } from '../../../services/api';
@@ -34,7 +34,7 @@ export interface InsurancePartner {
   updated_at: string;
 }
 
-// Shape returned by GET /mechanics/ (list)
+// Shape returned by GET /api/v1/mechanics/ (list)
 export interface MechanicListItem {
   id: string;
   name: string;
@@ -46,7 +46,7 @@ export interface MechanicListItem {
   specialties: string[];
 }
 
-// Shape returned by GET /mechanics/{id} (detail)
+// Shape returned by GET /api/v1/mechanics/{id} (detail)
 export interface MechanicDetail {
   id: string;
   name: string;
@@ -97,7 +97,7 @@ export const fetchMechanics = createAsyncThunk<
   MechanicsFilters | undefined
 >('mechanics/fetchList', async (filters = {}, { rejectWithValue }) => {
   try {
-    const url = buildUrl('/mechanics/', {
+    const url = buildUrl('/api/v1/mechanics/', {
       search: filters.search,
       type: filters.type && filters.type !== 'all' ? filters.type : undefined,
       lat: filters.lat,
@@ -113,7 +113,7 @@ export const fetchMechanicDetail = createAsyncThunk<MechanicDetail, string>(
   'mechanics/fetchDetail',
   async (mechanicId, { rejectWithValue }) => {
     try {
-      const url = buildUrl(`/mechanics/${mechanicId}`);
+      const url = buildUrl(`/api/v1/mechanics/${mechanicId}`);
       return await apiFetch<MechanicDetail>(url);
     } catch (err) {
       return rejectWithValue(extractError(err));
@@ -124,11 +124,10 @@ export const fetchMechanicDetail = createAsyncThunk<MechanicDetail, string>(
 export const suggestMechanic = createAsyncThunk<
   void,
   MechanicSuggestionPayload
->('mechanics/suggest', async (payload, { getState, rejectWithValue }) => {
+>('mechanics/suggest', async (payload, { rejectWithValue }) => {
   try {
-    const token = (getState() as any).auth.token;
-    const url = buildUrl('/mechanics/suggestions/');
-    await apiFetchAuth<void>(url, token, {
+    const url = buildUrl('/api/v1/mechanics/suggestions/');
+    await authorizedFetch<void>(url, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
