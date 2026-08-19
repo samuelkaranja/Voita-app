@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,18 +7,24 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  findNodeHandle,
+  UIManager,
+  Keyboard,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ChevronLeft, Wrench, Droplets, Truck } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 
 import { ServicesStackParamList } from '../../navigation/ServicesStack';
 import { useAppDispatch } from '../../redux/hooks';
 import { suggestMechanic } from '../../redux/slices/services/mechanicsSlice';
 import { suggestCarWash } from '../../redux/slices/services/carWashSlice';
 import { suggestTowing } from '../../redux/slices/services/towingSlice';
+import { useKeyboardOffset } from '../../hooks/useKeyboardOffset';
 
 type NavProp = NativeStackNavigationProp<
   ServicesStackParamList,
@@ -68,6 +74,15 @@ const CATEGORY_OPTIONS: {
 export default function SuggestServiceScreen() {
   const navigation = useNavigation<NavProp>();
   const dispatch = useAppDispatch();
+  const keyboardHeight = useKeyboardOffset();
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const reasonInputRef = useRef<TextInput>(null);
+  const reasonFocusedRef = useRef(false);
+
+  const animatedPadding = useAnimatedStyle(() => ({
+    paddingBottom: keyboardHeight.value,
+  }));
 
   const [category, setCategory] = useState<Category | null>('mechanic');
   const [name, setName] = useState('');
@@ -98,6 +113,51 @@ export default function SuggestServiceScreen() {
   const handleCategoryChange = (id: Category) => {
     setCategory(id);
     setType(null); // type options differ per category, so clear the previous selection
+  };
+
+  const performScrollToReason = () => {
+    const scrollNode = findNodeHandle(scrollViewRef.current);
+    const inputNode = findNodeHandle(reasonInputRef.current);
+    if (!scrollNode || !inputNode) return;
+
+    UIManager.measureLayout(
+      inputNode,
+      scrollNode,
+      () => {}, // onFail — safe to ignore, just skips the scroll
+      (_x, y) => {
+        scrollViewRef.current?.scrollTo({
+          y: y - 16,
+          animated: true,
+        });
+      },
+    );
+  };
+
+  useEffect(() => {
+    // Android fires keyboardDidShow reliably once the resize has
+    // actually happened, unlike a fixed setTimeout guess.
+    const showEvent =
+      Platform.OS === 'android' ? 'keyboardDidShow' : 'keyboardWillShow';
+
+    const sub = Keyboard.addListener(showEvent, () => {
+      if (reasonFocusedRef.current) {
+        performScrollToReason();
+      }
+    });
+
+    return () => sub.remove();
+  }, []);
+
+  const handleReasonFocus = () => {
+    reasonFocusedRef.current = true;
+    // Covers the case where the keyboard is already open (e.g. user
+    // tabs from Location straight to Reason) and keyboardDidShow won't
+    // fire again since the keyboard height isn't changing.
+    performScrollToReason();
+  };
+
+  const handleReasonBlur = () => {
+    reasonFocusedRef.current = false;
   };
 
   const handleSubmit = async () => {
@@ -152,123 +212,129 @@ export default function SuggestServiceScreen() {
         <View style={styles.backBtn} />
       </View>
 
-      <ScrollView
-        style={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={styles.label}>What kind of service?</Text>
-        <View style={styles.categoryRow}>
-          {CATEGORY_OPTIONS.map(opt => {
-            const isSelected = category === opt.id;
-            return (
-              <TouchableOpacity
-                key={opt.id}
-                onPress={() => handleCategoryChange(opt.id)}
-                style={[
-                  styles.categoryCard,
-                  isSelected && styles.categoryCardActive,
-                ]}
-                activeOpacity={0.85}
-              >
-                <opt.Icon
-                  size={22}
-                  color={isSelected ? '#FFFFFF' : '#111827'}
-                  strokeWidth={2}
-                />
-                <Text
-                  style={[
-                    styles.categoryText,
-                    isSelected && styles.categoryTextActive,
-                  ]}
-                >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {selectedCategory && (
-          <>
-            <Text style={styles.label}>{selectedCategory.nameLabel}</Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder={selectedCategory.namePlaceholder}
-              placeholderTextColor="#9CA3AF"
-            />
-
-            <Text style={styles.label}>Phone Number</Text>
-            <TextInput
-              style={styles.input}
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="07XX XXX XXX"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="phone-pad"
-            />
-
-            <Text style={styles.label}>Location</Text>
-            <TextInput
-              style={styles.input}
-              value={location}
-              onChangeText={setLocation}
-              placeholder="e.g. Juja, Kiambu"
-              placeholderTextColor="#9CA3AF"
-            />
-
-            <Text style={styles.label}>{selectedCategory.typeLabel}</Text>
-            <View style={styles.chipRow}>
-              {selectedCategory.typeOptions.map(t => (
+      <Animated.View style={[{ flex: 1 }, animatedPadding]}>
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.label}>What kind of service?</Text>
+          <View style={styles.categoryRow}>
+            {CATEGORY_OPTIONS.map(opt => {
+              const isSelected = category === opt.id;
+              return (
                 <TouchableOpacity
-                  key={t}
-                  onPress={() => setType(t)}
-                  style={[styles.chip, type === t && styles.chipActive]}
+                  key={opt.id}
+                  onPress={() => handleCategoryChange(opt.id)}
+                  style={[
+                    styles.categoryCard,
+                    isSelected && styles.categoryCardActive,
+                  ]}
+                  activeOpacity={0.85}
                 >
+                  <opt.Icon
+                    size={22}
+                    color={isSelected ? '#FFFFFF' : '#111827'}
+                    strokeWidth={2}
+                  />
                   <Text
                     style={[
-                      styles.chipText,
-                      type === t && styles.chipTextActive,
+                      styles.categoryText,
+                      isSelected && styles.categoryTextActive,
                     ]}
                   >
-                    {t}
+                    {opt.label}
                   </Text>
                 </TouchableOpacity>
-              ))}
-            </View>
+              );
+            })}
+          </View>
 
-            <Text style={styles.label}>Why should we add them?</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={reason}
-              onChangeText={setReason}
-              placeholder="Tell us what makes them worth recommending..."
-              placeholderTextColor="#9CA3AF"
-              multiline
-              numberOfLines={4}
-            />
+          {selectedCategory && (
+            <>
+              <Text style={styles.label}>{selectedCategory.nameLabel}</Text>
+              <TextInput
+                style={styles.input}
+                value={name}
+                onChangeText={setName}
+                placeholder={selectedCategory.namePlaceholder}
+                placeholderTextColor="#9CA3AF"
+              />
 
-            <TouchableOpacity
-              style={[
-                styles.submitButton,
-                !isValid && styles.submitButtonDisabled,
-              ]}
-              onPress={handleSubmit}
-              disabled={!isValid || submitting}
-              activeOpacity={0.85}
-            >
-              {submitting ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.submitButtonText}>Submit Suggestion</Text>
-              )}
-            </TouchableOpacity>
-          </>
-        )}
-      </ScrollView>
+              <Text style={styles.label}>Phone Number</Text>
+              <TextInput
+                style={styles.input}
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="07XX XXX XXX"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="phone-pad"
+              />
+
+              <Text style={styles.label}>Location</Text>
+              <TextInput
+                style={styles.input}
+                value={location}
+                onChangeText={setLocation}
+                placeholder="e.g. Juja, Kiambu"
+                placeholderTextColor="#9CA3AF"
+              />
+
+              <Text style={styles.label}>{selectedCategory.typeLabel}</Text>
+              <View style={styles.chipRow}>
+                {selectedCategory.typeOptions.map(t => (
+                  <TouchableOpacity
+                    key={t}
+                    onPress={() => setType(t)}
+                    style={[styles.chip, type === t && styles.chipActive]}
+                  >
+                    <Text
+                      style={[
+                        styles.chipText,
+                        type === t && styles.chipTextActive,
+                      ]}
+                    >
+                      {t}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.label}>Why should we add them?</Text>
+              <TextInput
+                ref={reasonInputRef}
+                style={[styles.input, styles.textArea]}
+                value={reason}
+                onChangeText={setReason}
+                onFocus={handleReasonFocus}
+                onBlur={handleReasonBlur}
+                placeholder="Tell us what makes them worth recommending..."
+                placeholderTextColor="#9CA3AF"
+                multiline
+                numberOfLines={5}
+              />
+
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  !isValid && styles.submitButtonDisabled,
+                ]}
+                onPress={handleSubmit}
+                disabled={!isValid || submitting}
+                activeOpacity={0.85}
+              >
+                {submitting ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Submit Suggestion</Text>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
+        </ScrollView>
+      </Animated.View>
     </SafeAreaView>
   );
 }

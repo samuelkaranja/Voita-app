@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { api } from '../../../api/client';
 import { extractError } from '../../../api/errors';
 
@@ -36,9 +36,17 @@ export interface FCMTokenRecord {
   created_at: string;
 }
 
+export interface ReceivedPushAlert {
+  id: string;
+  title: string;
+  subtitle: string;
+  receivedAt: number;
+}
+
 interface NotificationsState {
   fcmToken: string | null;
   tokens: FCMTokenRecord[];
+  receivedAlerts: ReceivedPushAlert[];
   loading: {
     register: boolean;
     tokens: boolean;
@@ -49,6 +57,7 @@ interface NotificationsState {
 const initialState: NotificationsState = {
   fcmToken: null,
   tokens: [],
+  receivedAlerts: [],
   loading: {
     register: false,
     tokens: false,
@@ -119,6 +128,16 @@ const notificationsSlice = createSlice({
     clearNotificationsError: state => {
       state.error = null;
     },
+    addReceivedAlert: (state, action: PayloadAction<ReceivedPushAlert>) => {
+      if (state.receivedAlerts.some(a => a.id === action.payload.id)) return;
+      state.receivedAlerts.unshift(action.payload);
+      state.receivedAlerts = state.receivedAlerts.slice(0, 20);
+    },
+    removeReceivedAlert: (state, action: PayloadAction<string>) => {
+      state.receivedAlerts = state.receivedAlerts.filter(
+        a => a.id !== action.payload,
+      );
+    },
   },
   extraReducers: builder => {
     builder
@@ -159,6 +178,10 @@ const notificationsSlice = createSlice({
   },
 });
 
-export const { setLocalFcmToken, clearNotificationsError } =
-  notificationsSlice.actions;
+export const {
+  setLocalFcmToken,
+  clearNotificationsError,
+  addReceivedAlert,
+  removeReceivedAlert,
+} = notificationsSlice.actions;
 export default notificationsSlice.reducer;

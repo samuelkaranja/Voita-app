@@ -15,6 +15,7 @@ import { Bell } from 'lucide-react-native';
 import TagSelector from './components/TagSelector';
 import MapViewComponent from './components/MapViewComponent';
 import DestinationCard from './components/DestinationCard';
+import { removeReceivedAlert } from '../../redux/slices/notifications/notificationsSlice';
 
 import {
   fetchPetrolStations,
@@ -42,7 +43,7 @@ import { useTabBarClearance } from '../../components/CustomTabBar';
 
 interface Alert {
   id: string;
-  type: 'flood' | 'congestion' | 'camera';
+  type: 'flood' | 'congestion' | 'camera' | 'admin';
   title: string;
   subtitle: string;
 }
@@ -67,6 +68,9 @@ export default function HomeScreen() {
   } = useSelector((state: any) => state.maps);
 
   const destination = useSelector((state: any) => state.maps.destination);
+  const receivedAlerts = useSelector(
+    (state: any) => state.notifications.receivedAlerts,
+  );
 
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [alertsExpanded, setAlertsExpanded] = useState(false);
@@ -81,6 +85,13 @@ export default function HomeScreen() {
   );
 
   const alerts = useMemo(() => {
+    const admin = receivedAlerts.map((a: any) => ({
+      id: a.id,
+      type: 'admin' as const,
+      title: a.title,
+      subtitle: a.subtitle,
+    }));
+
     const flood = floodAlerts.map((a: any) => ({
       id: a.id,
       type: 'flood' as const,
@@ -106,10 +117,16 @@ export default function HomeScreen() {
         : `Speed camera ahead · ${Math.round(cam.distanceMeters)}m`,
     }));
 
-    return [...cameras, ...flood, ...congestion].filter(
+    return [...admin, ...cameras, ...flood, ...congestion].filter(
       a => !dismissedAlerts.includes(a.id),
     );
-  }, [floodAlerts, congestionAlerts, nearbyCameras, dismissedAlerts]);
+  }, [
+    receivedAlerts,
+    floodAlerts,
+    congestionAlerts,
+    nearbyCameras,
+    dismissedAlerts,
+  ]);
 
   const isSafeRouteActive =
     selectedTag === 'Lady-Friendly' && safeRouteCoords.length > 0;
@@ -329,8 +346,11 @@ export default function HomeScreen() {
   };
 
   /* Dismiss Alert */
-  const handleDismissAlert = (id: string) => {
+  const handleDismissAlert = (id: string, type: Alert['type']) => {
     setDismissedAlerts(prev => [...prev, id]);
+    if (type === 'admin') {
+      dispatch(removeReceivedAlert(id));
+    }
   };
 
   /* Safety List */
@@ -523,6 +543,8 @@ export default function HomeScreen() {
                         ? '🌧'
                         : alert.type === 'camera'
                         ? '📷'
+                        : alert.type === 'admin'
+                        ? '📢'
                         : '🚧'}
                     </Text>
                     <View style={styles.alertText}>
@@ -530,7 +552,7 @@ export default function HomeScreen() {
                       <Text style={styles.alertSubtitle}>{alert.subtitle}</Text>
                     </View>
                     <TouchableOpacity
-                      onPress={() => handleDismissAlert(alert.id)}
+                      onPress={() => handleDismissAlert(alert.id, alert.type)}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                       <Text style={styles.alertClose}>✕</Text>

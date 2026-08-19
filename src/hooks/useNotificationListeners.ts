@@ -7,6 +7,7 @@ import {
   fetchCommunityRooms,
   markRoomJoined,
 } from '../redux/slices/community/communitySlice';
+import { addReceivedAlert } from '../redux/slices/notifications/notificationsSlice';
 
 export const useNotificationListeners = () => {
   const navigation = useNavigation<any>();
@@ -31,6 +32,27 @@ export const useNotificationListeners = () => {
     }
   };
 
+  // Admin-sent alerts are tagged data.type === 'system' by the backend.
+  // Captured into notificationsSlice.receivedAlerts so HomeScreen's Live
+  // Alerts panel can display them alongside flood/congestion/camera alerts.
+  const handleAlertCapture = (remoteMessage: any) => {
+    const data = remoteMessage?.data ?? {};
+    if (data?.type !== 'system') return;
+
+    const title = remoteMessage?.notification?.title;
+    const body = remoteMessage?.notification?.body;
+    if (!title && !body) return;
+
+    dispatch(
+      addReceivedAlert({
+        id: data.alert_id ?? remoteMessage?.messageId ?? `${Date.now()}`,
+        title: title ?? 'Alert',
+        subtitle: body ?? '',
+        receivedAt: Date.now(),
+      }),
+    );
+  };
+
   useEffect(() => {
     // Foreground: app is open, show an in-app toast
     const unsubscribeForeground = messaging().onMessage(async remoteMessage => {
@@ -38,14 +60,11 @@ export const useNotificationListeners = () => {
         '🟢 [useNotificationListeners] Foreground notification:',
         remoteMessage,
       );
+      handleAlertCapture(remoteMessage);
       Toast.show({
         type: 'info',
         text1: remoteMessage.notification?.title ?? 'Notification',
         text2: remoteMessage.notification?.body,
-        position: 'top',
-        visibilityTime: 8000,
-        autoHide: true,
-        topOffset: 60,
         onPress: () => handleNotificationNavigation(remoteMessage.data),
       });
     });
@@ -57,6 +76,7 @@ export const useNotificationListeners = () => {
           '🔵 [useNotificationListeners] Opened from background:',
           remoteMessage,
         );
+        handleAlertCapture(remoteMessage);
         handleNotificationNavigation(remoteMessage.data);
       },
     );
@@ -70,6 +90,7 @@ export const useNotificationListeners = () => {
             '🔵 [useNotificationListeners] Opened from quit state:',
             remoteMessage,
           );
+          handleAlertCapture(remoteMessage);
           handleNotificationNavigation(remoteMessage.data);
         }
       });
